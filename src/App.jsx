@@ -4,7 +4,7 @@ function App() {
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
-    fetch("https://your-backend-url.onrender.com/rooms")
+      fetch(`${import.meta.env.VITE_API_URL}/allRooms`)
         .then((res) => res.json())
         .then((data) => setRooms(data));
   }, []);
