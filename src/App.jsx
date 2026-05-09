@@ -1,21 +1,19 @@
-import { useEffect, useState } from "react";
-
 function App() {
-  const [rooms, setRooms] = useState([]);
+    const [rooms] = useState([
+        { id: 1, name: "Room A" },
+        { id: 2, name: "Room B" },
+        { id: 3, name: "Room C" }
+    ]);
 
-  useEffect(() => {
-    fetch("https://booking-system-1-jfv3.onrender.com/rooms")
-        .then((res) => res.json())
-        .then((data) => setRooms(data));
-  }, []);
+    return (
+        <div>
+            <h1>Rooms</h1>
 
-  return (
-      <div>
-        <h1>Rooms</h1>
-
-
-      </div>
-  );
+            {rooms.map((r) => (
+                <div key={r.id}>
+                    {r.name}
+                </div>
+            ))}
+        </div>
+    );
 }
-
-export default App;
