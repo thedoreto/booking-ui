@@ -4,7 +4,7 @@ function App() {
   const [rooms, setRooms] = useState([]);
 
   useEffect(() => {
-      fetch(`${import.meta.env.VITE_API_URL}/allRooms`)
+      fetch(`${import.meta.env.VITE_API_URL}/ooms`)
         .then((res) => res.json())
         .then((data) => setRooms(data));
   }, []);
