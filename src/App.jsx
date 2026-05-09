@@ -13,11 +13,7 @@ function App() {
       <div>
         <h1>Rooms</h1>
 
-        {rooms.map((r) => (
-            <div key={r.id}>
-              {r.name}
-            </div>
-        ))}
+
       </div>
   );
 }
