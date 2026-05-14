@@ -4,40 +4,92 @@ import { Link } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Bookings() {
+
     const [bookings, setBookings] = useState([]);
-    const [showAll, setShowAll] = useState(false);
+    const [viewMode, setViewMode] = useState("active");
+
+    const getErrorMessage = (data, fallback) => {
+        if (!data) return fallback;
+
+        return (
+            data.message ||
+            data.detail ||
+            data.error ||
+            fallback
+        );
+    };
+
+    const getEndpoint = (mode) => {
+
+        switch (mode) {
+            case "active":
+                return "/bookings/active";
+            case "all":
+                return "/bookings/future";
+            case "history":
+                return "/bookings/history";
+            default:
+                return "/bookings/active";
+        }
+    };
 
     const loadBookings = () => {
-        fetch(`${API_URL}/bookings`)
-            .then(res => res.json())
-            .then(data => {
-                const filtered = showAll
-                    ? data
-                    : data.filter(b => b.status === "CONFIRMED");
 
-                setBookings(filtered);
+        fetch(`${API_URL}${getEndpoint(viewMode)}`)
+            .then(async (res) => {
+
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok) {
+                    throw new Error(
+                        getErrorMessage(data, "Failed to load bookings")
+                    );
+                }
+
+                return data;
+            })
+            .then(data => {
+                setBookings(data);
+            })
+            .catch(err => {
+                alert("❌ " + err.message);
             });
     };
 
     useEffect(() => {
         loadBookings();
-    }, [showAll]);
+    }, [viewMode]);
 
     const cancelBooking = (id) => {
+
         if (!window.confirm("Cancel this booking?")) return;
 
         fetch(`${API_URL}/bookings/${id}/cancel`, {
             method: "PUT"
         })
-            .then(res => {
-                if (!res.ok) throw new Error("Cancel failed");
+            .then(async (res) => {
+
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok) {
+                    throw new Error(
+                        getErrorMessage(data, "Cancel failed")
+                    );
+                }
+
+                return data;
+            })
+            .then(() => {
                 loadBookings();
             })
-            .catch(err => alert(err.message));
+            .catch(err => {
+                alert("❌ " + err.message);
+            });
     };
 
     return (
         <div>
+
             <h2>Bookings</h2>
 
             {bookings.map(b => (
@@ -52,17 +104,28 @@ export default function Bookings() {
                         gap: "10px"
                     }}
                 >
+
                     <div>{b.customerName}</div>
-                    <div>Room {b.roomNumber} ({b.roomType})</div>
-                    <div>{b.checkInDate} → {b.checkOutDate}</div>
+
+                    <div>
+                        Room {b.roomNumber} ({b.roomType})
+                    </div>
+
+                    <div>
+                        {b.checkInDate} → {b.checkOutDate}
+                    </div>
+
                     <div>{b.status}</div>
 
-                    <button
-                        onClick={() => cancelBooking(b.id)}
-                        style={{ color: "red" }}
-                    >
-                        Cancel
-                    </button>
+                    {viewMode !== "history" && (
+                        <button
+                            onClick={() => cancelBooking(b.id)}
+                            style={{ color: "red" }}
+                        >
+                            Cancel
+                        </button>
+                    )}
+
                 </div>
             ))}
 
@@ -74,14 +137,25 @@ export default function Bookings() {
                     gap: "10px"
                 }}
             >
+
                 <Link to="/bookings/new">
                     <button>Create booking</button>
                 </Link>
 
-                <button onClick={() => setShowAll(prev => !prev)}>
-                    {showAll ? "Show confirmed only" : "Show all bookings"}
+                <button onClick={() => setViewMode("active")}>
+                    Show active
                 </button>
+
+                <button onClick={() => setViewMode("all")}>
+                    Show all
+                </button>
+
+                <button onClick={() => setViewMode("history")}>
+                    Show history
+                </button>
+
             </div>
+
         </div>
     );
 }

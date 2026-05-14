@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function RoomDetails() {
+
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -14,28 +15,55 @@ export default function RoomDetails() {
     const [price, setPrice] = useState(0);
     const [roomNumber, setRoomNumber] = useState(0);
 
+    const getErrorMessage = (data, fallback) => {
+        if (!data) return fallback;
+
+        return (
+            data.message ||
+            data.detail ||
+            data.error ||
+            fallback
+        );
+    };
+
     useEffect(() => {
+
         if (!isEditMode) {
             setRoom({});
             return;
         }
 
         fetch(`${API_URL}/rooms/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                setRoom(data);
-                setRoomNumber(data.roomNumber);
-                setRoomType(data.type);
-                setPrice(data.pricePerNight);
+            .then(async (res) => {
+
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok) {
+                    throw new Error(
+                        getErrorMessage(data, "Failed to load room")
+                    );
+                }
+
+                return data;
             })
-            .catch(() => {
-                alert("❌ Failed to load room");
+            .then(data => {
+
+                setRoom(data);
+                setRoomNumber(data.roomNumber ?? 0);
+                setRoomType(data.type ?? "");
+                setPrice(data.pricePerNight ?? 0);
+
+            })
+            .catch(err => {
+                alert("❌ " + err.message);
             });
+
     }, [id]);
 
     if (isEditMode && !room) return <div>Loading...</div>;
 
     const saveRoom = () => {
+
         const payload = {
             roomNumber,
             type: roomType,
@@ -56,15 +84,26 @@ export default function RoomDetails() {
             body: JSON.stringify(payload)
         })
             .then(async (res) => {
+
                 const text = await res.text();
+                const data = text ? (() => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return text;
+                    }
+                })() : null;
 
                 if (!res.ok) {
-                    throw new Error(text || "Operation failed");
+                    throw new Error(
+                        getErrorMessage(data, "Operation failed")
+                    );
                 }
 
-                return text ? JSON.parse(text) : null;
+                return data;
             })
             .then(() => {
+
                 alert(
                     isEditMode
                         ? "Room updated successfully!"
@@ -72,6 +111,7 @@ export default function RoomDetails() {
                 );
 
                 navigate("/rooms");
+
             })
             .catch(err => {
                 alert("❌ " + err.message);
@@ -79,23 +119,37 @@ export default function RoomDetails() {
     };
 
     const deleteRoom = () => {
+
         if (!window.confirm("Delete this room?")) return;
 
         fetch(`${API_URL}/rooms/${id}`, {
             method: "DELETE"
         })
             .then(async (res) => {
+
                 const text = await res.text();
 
+                const data = text ? (() => {
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        return text;
+                    }
+                })() : null;
+
                 if (!res.ok) {
-                    throw new Error(text || "Delete failed");
+                    throw new Error(
+                        getErrorMessage(data, "Delete failed")
+                    );
                 }
 
-                return text;
+                return data;
             })
             .then(() => {
+
                 alert("Room deleted!");
                 navigate("/rooms");
+
             })
             .catch(err => {
                 alert("❌ " + err.message);
@@ -104,14 +158,20 @@ export default function RoomDetails() {
 
     return (
         <div>
-            <h2>{isEditMode ? "Room details" : "Create new room"}</h2>
+
+            <h2>
+                {isEditMode ? "Room details" : "Create new room"}
+            </h2>
 
             <div>
                 <label>Room number:</label>
+
                 <input
                     type="number"
                     value={roomNumber}
-                    onChange={(e) => setRoomNumber(Number(e.target.value))}
+                    onChange={(e) =>
+                        setRoomNumber(Number(e.target.value))
+                    }
                 />
             </div>
 
@@ -131,6 +191,7 @@ export default function RoomDetails() {
 
             <div>
                 <label>Price:</label>
+
                 <input
                     type="number"
                     value={price}
@@ -145,11 +206,15 @@ export default function RoomDetails() {
             {isEditMode && (
                 <button
                     onClick={deleteRoom}
-                    style={{ marginLeft: "10px", color: "red" }}
+                    style={{
+                        marginLeft: "10px",
+                        color: "red"
+                    }}
                 >
                     Delete
                 </button>
             )}
+
         </div>
     );
 }
