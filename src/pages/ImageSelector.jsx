@@ -76,25 +76,28 @@ export default function ImageSelector() {
 
         try {
 
-            if (!room) {
-                throw new Error("Room not loaded");
+            if (!roomId) {
+                throw new Error("Missing roomId");
             }
 
-            const updatedRoom = {
-                ...room,
-                imageIds: selected
-            };
+            if (selected.length === 0) {
+                navigate(-1);
+                return;
+            }
 
-            const res = await fetch(`${API_URL}/rooms/${roomId}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(updatedRoom)
-            });
+            const res = await fetch(
+                `${API_URL}/rooms/${roomId}/images/add`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(selected)
+                }
+            );
 
             if (!res.ok) {
-                throw new Error("Failed to update room");
+                throw new Error("Failed to add images to room");
             }
 
             await res.json();

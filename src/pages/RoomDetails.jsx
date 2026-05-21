@@ -149,7 +149,7 @@ export default function RoomDetails() {
         setRoom(data);
     };
 
-    // ✔ REMOVE IMAGE
+    // ✔ REMOVE IMAGE (uses backend DELETE endpoint)
     const removeImageFromRoom = async (imageId) => {
 
         const confirmDelete = window.confirm(
@@ -160,16 +160,21 @@ export default function RoomDetails() {
 
         try {
 
-            const updatedIds =
-                imageIds.filter(id => id !== imageId);
-
-            setImageIds(updatedIds);
-
-            setImages(prev =>
-                prev.filter(img => img.id !== imageId)
+            // backend delete
+            const res = await fetch(
+                `${API_URL}/rooms/${id}/images/${imageId}`,
+                { method: "DELETE" }
             );
 
-            await updateRoomImages(updatedIds);
+            if (!res.ok) {
+                throw new Error("Failed to delete image from room");
+            }
+
+            // local state update
+            const updatedIds = imageIds.filter(i => i !== imageId);
+
+            setImageIds(updatedIds);
+            setImages(prev => prev.filter(img => img.id !== imageId));
 
         } catch (err) {
             alert("❌ " + err.message);
@@ -273,7 +278,6 @@ export default function RoomDetails() {
                                     }}
                                 >
 
-                                    {/* DELETE BUTTON */}
                                     <button
                                         onClick={() =>
                                             removeImageFromRoom(img.id)
