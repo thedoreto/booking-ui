@@ -6,6 +6,8 @@ import CustomerDetails from "./pages/CustomerDetails";
 import Home from "./pages/Home";
 import Bookings from "./pages/Bookings";
 import CreateBooking from "./pages/CreateBooking"
+import ImageRepository from "./pages/ImageRepository"
+import ImageUpload from "./pages/ImageUpload";
 
 function App() {
     return (
@@ -32,6 +34,8 @@ function App() {
                 <Route path="/customers/new" element={<CustomerDetails />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/bookings/new" element={<CreateBooking />} />
+                <Route path="/images" element={<ImageRepository />} />
+                <Route path="/images/upload" element={<ImageUpload />} />
             </Routes>
         </div>
     );

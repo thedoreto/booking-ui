@@ -15,6 +15,8 @@ export default function RoomDetails() {
     const [price, setPrice] = useState(0);
     const [roomNumber, setRoomNumber] = useState(0);
 
+    const [images, setImages] = useState([]);
+
     const getErrorMessage = (data, fallback) => {
         if (!data) return fallback;
 
@@ -28,10 +30,7 @@ export default function RoomDetails() {
 
     useEffect(() => {
 
-        if (!isEditMode) {
-            setRoom({});
-            return;
-        }
+        if (!isEditMode) return;
 
         fetch(`${API_URL}/rooms/${id}`)
             .then(async (res) => {
@@ -46,28 +45,45 @@ export default function RoomDetails() {
 
                 return data;
             })
-            .then(data => {
+            .then(async (data) => {
 
                 setRoom(data);
+
                 setRoomNumber(data.roomNumber ?? 0);
                 setRoomType(data.type ?? "");
                 setPrice(data.pricePerNight ?? 0);
+
+                // LOAD IMAGES
+                if (data.imageIds?.length) {
+
+                    const imagesData = await Promise.all(
+                        data.imageIds.map(imageId =>
+                            fetch(`${API_URL}/images/${imageId}`)
+                                .then(res => res.json())
+                        )
+                    );
+
+                    setImages(imagesData);
+                }
 
             })
             .catch(err => {
                 alert("❌ " + err.message);
             });
 
-    }, [id]);
+    }, [id, isEditMode]);
 
-    if (isEditMode && !room) return <div>Loading...</div>;
+    if (isEditMode && !room) {
+        return <div>Loading...</div>;
+    }
 
     const saveRoom = () => {
 
         const payload = {
             roomNumber,
             type: roomType,
-            pricePerNight: Number(price)
+            pricePerNight: Number(price),
+            imageIds: room?.imageIds ?? []
         };
 
         const url = isEditMode
@@ -86,6 +102,7 @@ export default function RoomDetails() {
             .then(async (res) => {
 
                 const text = await res.text();
+
                 const data = text ? (() => {
                     try {
                         return JSON.parse(text);
@@ -213,6 +230,69 @@ export default function RoomDetails() {
                 >
                     Delete
                 </button>
+            )}
+
+            {/* GALLERY */}
+            {isEditMode && images.length > 0 && (
+                <div style={{ marginTop: "30px" }}>
+
+                    <h3>Images</h3>
+
+                    <div
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                                "repeat(auto-fill, minmax(180px, 1fr))",
+                            gap: "12px"
+                        }}
+                    >
+                        {images.map((img, idx) => (
+                            <div
+                                key={img.id ?? idx}
+                                style={{
+                                    overflow: "hidden",
+                                    borderRadius: "12px",
+                                    boxShadow:
+                                        "0 4px 12px rgba(0,0,0,0.1)",
+                                    cursor: "pointer",
+                                    transition: "transform 0.2s",
+                                    background: "white"
+                                }}
+                                onMouseOver={(e) =>
+                                    (e.currentTarget.style.transform =
+                                        "scale(1.03)")
+                                }
+                                onMouseOut={(e) =>
+                                    (e.currentTarget.style.transform =
+                                        "scale(1)")
+                                }
+                            >
+                                <img
+                                    src={img.url}
+                                    alt={`room-${idx}`}
+                                    style={{
+                                        width: "100%",
+                                        height: "140px",
+                                        objectFit: "cover"
+                                    }}
+                                    loading="lazy"
+                                />
+
+                                <div
+                                    style={{
+                                        padding: "10px",
+                                        fontSize: "14px",
+                                        fontWeight: "500"
+                                    }}
+                                >
+                                    {img.title}
+                                </div>
+
+                            </div>
+                        ))}
+                    </div>
+
+                </div>
             )}
 
         </div>
