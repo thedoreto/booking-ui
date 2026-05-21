@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -15,57 +15,26 @@ export default function RoomDetails() {
     const [price, setPrice] = useState(0);
     const [roomNumber, setRoomNumber] = useState(0);
 
+    const [imageIds, setImageIds] = useState([]);
     const [images, setImages] = useState([]);
-
-    const getErrorMessage = (data, fallback) => {
-        if (!data) return fallback;
-
-        return (
-            data.message ||
-            data.detail ||
-            data.error ||
-            fallback
-        );
-    };
 
     useEffect(() => {
 
         if (!isEditMode) return;
 
         fetch(`${API_URL}/rooms/${id}`)
-            .then(async (res) => {
-
-                const data = await res.json().catch(() => null);
-
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Failed to load room")
-                    );
-                }
-
-                return data;
-            })
-            .then(async (data) => {
+            .then(res => res.json())
+            .then(data => {
 
                 setRoom(data);
-
                 setRoomNumber(data.roomNumber ?? 0);
                 setRoomType(data.type ?? "");
                 setPrice(data.pricePerNight ?? 0);
 
-                // LOAD IMAGES
-                if (data.imageIds?.length) {
+                const ids = data.imageIds ?? [];
+                setImageIds(ids);
 
-                    const imagesData = await Promise.all(
-                        data.imageIds.map(imageId =>
-                            fetch(`${API_URL}/images/${imageId}`)
-                                .then(res => res.json())
-                        )
-                    );
-
-                    setImages(imagesData);
-                }
-
+                loadImages(ids);
             })
             .catch(err => {
                 alert("❌ " + err.message);
@@ -73,133 +42,60 @@ export default function RoomDetails() {
 
     }, [id, isEditMode]);
 
-    if (isEditMode && !room) {
-        return <div>Loading...</div>;
-    }
+    const loadImages = async (ids) => {
 
-    const saveRoom = () => {
+        if (!ids || ids.length === 0) {
+            setImages([]);
+            return;
+        }
 
-        const payload = {
-            roomNumber,
-            type: roomType,
-            pricePerNight: Number(price),
-            imageIds: room?.imageIds ?? []
-        };
+        try {
 
-        const url = isEditMode
-            ? `${API_URL}/rooms/${id}`
-            : `${API_URL}/rooms`;
+            const results = await Promise.all(
+                ids.map(async (imageId) => {
 
-        const method = isEditMode ? "PUT" : "POST";
+                    const res = await fetch(`${API_URL}/images/${imageId}`);
 
-        fetch(url, {
-            method,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        })
-            .then(async (res) => {
+                    if (!res.ok) return null;
 
-                const text = await res.text();
+                    return await res.json();
+                })
+            );
 
-                const data = text ? (() => {
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        return text;
-                    }
-                })() : null;
+            setImages(results.filter(Boolean));
 
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Operation failed")
-                    );
-                }
-
-                return data;
-            })
-            .then(() => {
-
-                alert(
-                    isEditMode
-                        ? "Room updated successfully!"
-                        : "Room created successfully!"
-                );
-
-                navigate("/rooms");
-
-            })
-            .catch(err => {
-                alert("❌ " + err.message);
-            });
+        } catch (err) {
+            console.error(err);
+        }
     };
 
-    const deleteRoom = () => {
+    // ✔ FIXED NAVIGATION (no callback in state)
+    const openImageSelector = () => {
 
-        if (!window.confirm("Delete this room?")) return;
-
-        fetch(`${API_URL}/rooms/${id}`, {
-            method: "DELETE"
-        })
-            .then(async (res) => {
-
-                const text = await res.text();
-
-                const data = text ? (() => {
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        return text;
-                    }
-                })() : null;
-
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Delete failed")
-                    );
-                }
-
-                return data;
-            })
-            .then(() => {
-
-                alert("Room deleted!");
-                navigate("/rooms");
-
-            })
-            .catch(err => {
-                alert("❌ " + err.message);
-            });
+        navigate("/images/select?roomId=" + id);
     };
 
     return (
-        <div>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
 
-            <h2>
-                {isEditMode ? "Room details" : "Create new room"}
-            </h2>
+            <h2>Room details</h2>
 
             <div>
-                <label>Room number:</label>
-
+                <label>Room number</label>
                 <input
                     type="number"
                     value={roomNumber}
-                    onChange={(e) =>
-                        setRoomNumber(Number(e.target.value))
-                    }
+                    onChange={(e) => setRoomNumber(Number(e.target.value))}
                 />
             </div>
 
             <div>
-                <label>Room type:</label>
-
+                <label>Type</label>
                 <select
                     value={roomType}
                     onChange={(e) => setRoomType(e.target.value)}
                 >
-                    <option value="">Select room type</option>
+                    <option value="">Select</option>
                     <option value="SINGLE">SINGLE</option>
                     <option value="DOUBLE">DOUBLE</option>
                     <option value="APARTMENT">APARTMENT</option>
@@ -207,91 +103,56 @@ export default function RoomDetails() {
             </div>
 
             <div>
-                <label>Price:</label>
-
+                <label>Price</label>
                 <input
                     type="number"
                     value={price}
-                    onChange={(e) => setPrice(e.target.value)}
+                    onChange={(e) => setPrice(Number(e.target.value))}
                 />
             </div>
 
-            <button onClick={saveRoom}>
-                {isEditMode ? "Save" : "Create"}
+            <button onClick={openImageSelector}>
+                Add images from repository
             </button>
 
-            {isEditMode && (
-                <button
-                    onClick={deleteRoom}
-                    style={{
-                        marginLeft: "10px",
-                        color: "red"
-                    }}
-                >
-                    Delete
-                </button>
-            )}
-
-            {/* GALLERY */}
-            {isEditMode && images.length > 0 && (
-                <div style={{ marginTop: "30px" }}>
-
+            {images.length > 0 && (
+                <div style={{ marginTop: "25px" }}>
                     <h3>Images</h3>
 
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                                "repeat(auto-fill, minmax(180px, 1fr))",
-                            gap: "12px"
-                        }}
-                    >
-                        {images.map((img, idx) => (
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+                        gap: "12px"
+                    }}>
+                        {images.map(img => (
                             <div
-                                key={img.id ?? idx}
+                                key={img.id}
                                 style={{
-                                    overflow: "hidden",
                                     borderRadius: "12px",
-                                    boxShadow:
-                                        "0 4px 12px rgba(0,0,0,0.1)",
-                                    cursor: "pointer",
-                                    transition: "transform 0.2s",
-                                    background: "white"
+                                    overflow: "hidden",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.12)"
                                 }}
-                                onMouseOver={(e) =>
-                                    (e.currentTarget.style.transform =
-                                        "scale(1.03)")
-                                }
-                                onMouseOut={(e) =>
-                                    (e.currentTarget.style.transform =
-                                        "scale(1)")
-                                }
                             >
                                 <img
                                     src={img.url}
-                                    alt={`room-${idx}`}
+                                    alt={img.title}
                                     style={{
                                         width: "100%",
                                         height: "140px",
                                         objectFit: "cover"
                                     }}
-                                    loading="lazy"
                                 />
 
-                                <div
-                                    style={{
-                                        padding: "10px",
-                                        fontSize: "14px",
-                                        fontWeight: "500"
-                                    }}
-                                >
+                                <div style={{
+                                    padding: "8px",
+                                    fontSize: "14px",
+                                    fontWeight: "500"
+                                }}>
                                     {img.title}
                                 </div>
-
                             </div>
                         ))}
                     </div>
-
                 </div>
             )}
 

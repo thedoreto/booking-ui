@@ -29,10 +29,16 @@ export default function Rooms() {
             <hr style={{ marginTop: "20px", marginBottom: "10px" }} />
 
             {/* Add new room button */}
-            <button
-                onClick={() => navigate("/rooms/new")}
-            >
+            <button onClick={() => navigate("/rooms/new")}>
                 Add new room
+            </button>
+
+            {/* NEW: Image repository */}
+            <button
+                onClick={() => navigate("/images")}
+                style={{ marginLeft: "10px" }}
+            >
+                Add images to repository
             </button>
         </div>
     );

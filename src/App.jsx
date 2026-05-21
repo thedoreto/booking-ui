@@ -8,6 +8,7 @@ import Bookings from "./pages/Bookings";
 import CreateBooking from "./pages/CreateBooking"
 import ImageRepository from "./pages/ImageRepository"
 import ImageUpload from "./pages/ImageUpload";
+import ImageSelector from "./pages/ImageSelector"
 
 function App() {
     return (
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/bookings/new" element={<CreateBooking />} />
                 <Route path="/images" element={<ImageRepository />} />
                 <Route path="/images/upload" element={<ImageUpload />} />
+                <Route path="/images/select" element={<ImageSelector />} />
             </Routes>
         </div>
     );
