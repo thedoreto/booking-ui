@@ -38,7 +38,7 @@ export default function Rooms() {
                 onClick={() => navigate("/images")}
                 style={{ marginLeft: "10px" }}
             >
-                Add images to repository
+                Image repository
             </button>
         </div>
     );
