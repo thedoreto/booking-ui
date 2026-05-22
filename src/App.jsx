@@ -1,8 +1,8 @@
 import { Routes, Route, Link } from "react-router-dom";
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
-import Customers from "./pages/Customers";
-import CustomerDetails from "./pages/CustomerDetails";
+import Users from "./pages/Users.jsx";
+import UserDetails from "./pages/UserDetails.jsx";
 import Home from "./pages/Home";
 import Bookings from "./pages/Bookings";
 import CreateBooking from "./pages/CreateBooking"
@@ -17,7 +17,7 @@ function App() {
             <nav>
                 <Link to="/">Home</Link> |{" "}
                 <Link to="/rooms">Rooms</Link> |{" "}
-                <Link to="/customers">Customers</Link> |{" "}
+                <Link to="/users">Users</Link> |{" "}
                 <Link to="/bookings">Bookings</Link>
 
             </nav>
@@ -30,9 +30,9 @@ function App() {
                 <Route path="/rooms" element={<Rooms />} />
                 <Route path="/rooms/:id" element={<RoomDetails />} />
                 <Route path="/rooms/new" element={<RoomDetails />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/customers/:id" element={<CustomerDetails />} />
-                <Route path="/customers/new" element={<CustomerDetails />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/users/:id" element={<UserDetails />} />
+                <Route path="/users/new" element={<UserDetails />} />
                 <Route path="/bookings" element={<Bookings />} />
                 <Route path="/bookings/new" element={<CreateBooking />} />
                 <Route path="/images" element={<ImageRepository />} />

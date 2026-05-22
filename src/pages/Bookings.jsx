@@ -105,7 +105,7 @@ export default function Bookings() {
                     }}
                 >
 
-                    <div>{b.customerName}</div>
+                    <div>{b.userName}</div>
 
                     <div>
                         Room {b.roomNumber} ({b.roomType})

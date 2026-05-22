@@ -6,19 +6,19 @@ const API_URL = import.meta.env.VITE_API_URL;
 export default function CreateBooking() {
     const navigate = useNavigate();
 
-    const [customers, setCustomers] = useState([]);
+    const [users, setUsers] = useState([]);
     const [rooms, setRooms] = useState([]);
 
-    const [customerId, setCustomerId] = useState("");
+    const [userId, setUserId] = useState("");
     const [roomId, setRoomId] = useState("");
 
     const [checkInDate, setCheckInDate] = useState("");
     const [checkOutDate, setCheckOutDate] = useState("");
 
     useEffect(() => {
-        fetch(`${API_URL}/customers`)
+        fetch(`${API_URL}/users`)
             .then(res => res.json())
-            .then(data => setCustomers(data));
+            .then(data => setUsers(data));
 
         fetch(`${API_URL}/rooms`)
             .then(res => res.json())
@@ -27,7 +27,7 @@ export default function CreateBooking() {
 
     const createBooking = () => {
         const payload = {
-            customerId,
+            userId,
             roomId,
             checkInDate,
             checkOutDate
@@ -63,15 +63,15 @@ export default function CreateBooking() {
             <h2>Create booking</h2>
 
             <div>
-                <label>Customer:</label>
+                <label>User:</label>
 
                 <select
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
+                    value={userId}
+                    onChange={(e) => setUserId(e.target.value)}
                 >
-                    <option value="">Select customer</option>
+                    <option value="">Select user</option>
 
-                    {customers.map(c => (
+                    {users.map(c => (
                         <option key={c.id} value={c.id}>
                             {c.name}
                         </option>

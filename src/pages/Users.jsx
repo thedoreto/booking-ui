@@ -3,24 +3,24 @@ import { Link } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export default function Customers() {
-    const [customers, setCustomers] = useState([]);
+export default function Users() {
+    const [users, setUsers] = useState([]);
 
     useEffect(() => {
-        fetch(`${API_URL}/customers`)
+        fetch(`${API_URL}/users`)
             .then(res => res.json())
-            .then(data => setCustomers(data));
+            .then(data => setUsers(data));
     }, []);
 
     return (
         <div>
-            <h2>Customers</h2>
+            <h2>Users</h2>
 
             <div>
-                {customers.map(c => (
+                {users.map(c => (
                     <Link
                         key={c.id}
-                        to={`/customers/${c.id}`}
+                        to={`/users/${c.id}`}
                         style={{
                             display: "block",
                             padding: "3px 0",
@@ -35,8 +35,8 @@ export default function Customers() {
 
             <hr style={{ margin: "12px 0" }} />
 
-            <Link to="/customers/new">
-                <button>Add new customer</button>
+            <Link to="/users/new">
+                <button>Add new user</button>
             </Link>
         </div>
     );
