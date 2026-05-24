@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../api/api";
 
 export default function Rooms() {
+
     const [rooms, setRooms] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetch(`${API_URL}/rooms`)
-            .then(res => res.json())
-            .then(data => setRooms(data));
+
+        const loadRooms = async () => {
+
+            try {
+
+                const response = await api.get("/rooms");
+                setRooms(response.data);
+
+            } catch (err) {
+                console.error("Failed to load rooms:", err);
+            }
+
+        };
+
+        loadRooms();
+
     }, []);
 
     return (
@@ -25,15 +38,12 @@ export default function Rooms() {
                 </div>
             ))}
 
-            {/* divider */}
             <hr style={{ marginTop: "20px", marginBottom: "10px" }} />
 
-            {/* Add new room button */}
             <button onClick={() => navigate("/rooms/new")}>
                 Add new room
             </button>
 
-            {/* NEW: Image repository */}
             <button
                 onClick={() => navigate("/images")}
                 style={{ marginLeft: "10px" }}

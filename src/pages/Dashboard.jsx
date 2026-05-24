@@ -6,34 +6,25 @@ export default function Dashboard() {
 
     const navigate = useNavigate();
 
-    const [userId, setUserId] = useState("");
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
-
         fetchMe();
-
     }, []);
 
     const fetchMe = async () => {
-
         try {
-
             const response = await api.get("/me");
-
-            setUserId(response.data);
-
+            setUser(response.data);
         } catch (err) {
-
             console.error(err);
-
             logout();
         }
     };
 
     const logout = () => {
-
         localStorage.removeItem("token");
-
+        setUser(null);
         navigate("/login");
     };
 
@@ -42,9 +33,16 @@ export default function Dashboard() {
 
             <h1>Dashboard</h1>
 
-            <p>
-                Current user id: {userId}
-            </p>
+            {user ? (
+                <>
+                    <p>Name: {user.name || "-"}</p>
+                    <p>Email: {user.email}</p>
+                    <p>Role: {user.role}</p>
+                    <p>User ID: {user.id}</p>
+                </>
+            ) : (
+                <p>Loading user...</p>
+            )}
 
             <button onClick={logout}>
                 Logout

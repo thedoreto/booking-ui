@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 
 import { useEffect, useState } from "react";
+import api from "./api/api";
 
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
@@ -25,42 +26,69 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
 
-    const [token, setToken] = useState(localStorage.getItem("token"));
+    const [token, setToken] = useState(() => localStorage.getItem("token"));
+    const [role, setRole] = useState(null);
+
+    // 🔥 единствен source of truth за role
+    const fetchMe = async () => {
+        try {
+            const res = await api.get("/me");
+            setRole(res.data?.role || null);
+        } catch (err) {
+            setRole(null);
+        }
+    };
 
     useEffect(() => {
 
-        const syncToken = () => {
-            setToken(localStorage.getItem("token"));
+        const syncAuth = () => {
+            const t = localStorage.getItem("token");
+
+            setToken(t);
+
+            if (t) {
+                fetchMe();
+            } else {
+                setRole(null);
+            }
         };
 
-        window.addEventListener("storage", syncToken);
+        window.addEventListener("storage", syncAuth);
+
+        syncAuth();
 
         return () => {
-            window.removeEventListener("storage", syncToken);
+            window.removeEventListener("storage", syncAuth);
         };
 
     }, []);
+
+    const isAdmin = role === "ADMIN";
 
     return (
         <div style={{ padding: "20px" }}>
 
             <h1>🔥 Booking system</h1>
 
-            {!token && (
+            {!token ? (
                 <nav>
                     <Link to="/login">Login</Link> |{" "}
                     <Link to="/register">Register</Link>
                 </nav>
-            )}
-
-            {token && (
+            ) : (
                 <nav>
                     <Link to="/">Home</Link> |{" "}
                     <Link to="/dashboard">Dashboard</Link> |{" "}
                     <Link to="/rooms">Rooms</Link> |{" "}
-                    <Link to="/users">Users</Link> |{" "}
-                    <Link to="/bookings">Bookings</Link> |{" "}
-                    <Link to="/images">Images</Link>
+                    <Link to="/bookings">Bookings</Link>
+
+                    {isAdmin && (
+                        <>
+                            |{" "}
+                            <Link to="/users">Users</Link> |{" "}
+                            <Link to="/images">Images</Link>
+                        </>
+                    )}
                 </nav>
             )}
 
@@ -68,94 +96,28 @@ function App() {
 
             <Routes>
 
-                {/* PUBLIC */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
-                {/* PROTECTED */}
-                <Route path="/" element={
-                    <ProtectedRoute>
-                        <Home />
-                    </ProtectedRoute>
-                } />
+                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-                <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                        <Dashboard />
-                    </ProtectedRoute>
-                } />
+                <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
+                <Route path="/rooms/:id" element={<ProtectedRoute><RoomDetails /></ProtectedRoute>} />
+                <Route path="/rooms/new" element={<ProtectedRoute><RoomDetails /></ProtectedRoute>} />
 
-                <Route path="/rooms" element={
-                    <ProtectedRoute>
-                        <Rooms />
-                    </ProtectedRoute>
-                } />
+                <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
+                <Route path="/users/:id" element={<ProtectedRoute><UserDetails /></ProtectedRoute>} />
+                <Route path="/users/new" element={<ProtectedRoute><UserDetails /></ProtectedRoute>} />
 
-                <Route path="/rooms/:id" element={
-                    <ProtectedRoute>
-                        <RoomDetails />
-                    </ProtectedRoute>
-                } />
+                <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
+                <Route path="/bookings/new" element={<ProtectedRoute><CreateBooking /></ProtectedRoute>} />
 
-                <Route path="/rooms/new" element={
-                    <ProtectedRoute>
-                        <RoomDetails />
-                    </ProtectedRoute>
-                } />
+                <Route path="/images" element={<ProtectedRoute><ImageRepository /></ProtectedRoute>} />
+                <Route path="/images/upload" element={<ProtectedRoute><ImageUpload /></ProtectedRoute>} />
+                <Route path="/images/select" element={<ProtectedRoute><ImageSelector /></ProtectedRoute>} />
 
-                <Route path="/users" element={
-                    <ProtectedRoute>
-                        <Users />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/users/:id" element={
-                    <ProtectedRoute>
-                        <UserDetails />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/users/new" element={
-                    <ProtectedRoute>
-                        <UserDetails />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/bookings" element={
-                    <ProtectedRoute>
-                        <Bookings />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/bookings/new" element={
-                    <ProtectedRoute>
-                        <CreateBooking />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/images" element={
-                    <ProtectedRoute>
-                        <ImageRepository />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/images/upload" element={
-                    <ProtectedRoute>
-                        <ImageUpload />
-                    </ProtectedRoute>
-                } />
-
-                <Route path="/images/select" element={
-                    <ProtectedRoute>
-                        <ImageSelector />
-                    </ProtectedRoute>
-                } />
-
-                {/* FALLBACK */}
-                <Route
-                    path="*"
-                    element={<Navigate to={token ? "/" : "/login"} />}
-                />
+                <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
 
             </Routes>
 

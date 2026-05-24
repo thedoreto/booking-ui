@@ -8,11 +8,11 @@ export default function Login() {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e) => {
         e.preventDefault();
-
         setLoading(true);
 
         try {
@@ -29,10 +29,10 @@ export default function Login() {
 
             localStorage.setItem("token", token);
 
-            // optional: small delay to ensure interceptor sync
-            setTimeout(() => {
-                navigate("/dashboard");
-            }, 100);
+            // 🔥 FORCE SYNC ACROSS APP
+            window.dispatchEvent(new Event("storage"));
+
+            navigate("/dashboard");
 
         } catch (err) {
             console.error("Login error:", err);
@@ -67,12 +67,22 @@ export default function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                 />
 
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                <div style={{ display: "flex", gap: "5px" }}>
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        style={{ flex: 1 }}
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                    >
+                        {showPassword ? "🙈" : "👁"}
+                    </button>
+                </div>
 
                 <button type="submit" disabled={loading}>
                     {loading ? "Logging in..." : "Login"}
