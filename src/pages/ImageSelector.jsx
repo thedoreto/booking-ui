@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../api/api";
+import useAuth from "../auth/useAuth";
 
 export default function ImageSelector() {
 
@@ -10,33 +11,50 @@ export default function ImageSelector() {
     const [room, setRoom] = useState(null);
 
     const navigate = useNavigate();
+
     const [searchParams] = useSearchParams();
 
     const roomId = searchParams.get("roomId");
 
+    const { user, loading } = useAuth();
+
+    const isAdmin = user?.role === "ADMIN";
+
+    // 🔥 block direct URL access for non-admin
     useEffect(() => {
+
+        if (!loading && !isAdmin) {
+            navigate("/");
+        }
+
+    }, [loading, isAdmin, navigate]);
+
+    useEffect(() => {
+
+        if (!isAdmin) return;
+
         loadImages();
         loadRoom();
-    }, []);
 
-    const loadImages = () => {
+    }, [isAdmin]);
 
-        fetch(`${API_URL}/images`)
-            .then(async (res) => {
+    const loadImages = async () => {
 
-                const data = await res.json().catch(() => null);
+        try {
 
-                if (!res.ok) {
-                    throw new Error(data?.message || "Failed to load images");
-                }
+            const res = await api.get("/images");
 
-                return data;
-            })
-            .then(setImages)
-            .catch((err) => {
-                console.error(err);
-                alert("❌ " + err.message);
-            });
+            setImages(res.data);
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
+        }
     };
 
     const loadRoom = async () => {
@@ -44,18 +62,19 @@ export default function ImageSelector() {
         if (!roomId) return;
 
         try {
-            const res = await fetch(`${API_URL}/rooms/${roomId}`);
 
-            if (!res.ok) {
-                throw new Error("Failed to load room");
-            }
+            const res = await api.get(`/rooms/${roomId}`);
 
-            const data = await res.json();
-            setRoom(data);
+            setRoom(res.data);
 
         } catch (err) {
+
             console.error(err);
-            alert("❌ " + err.message);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
         }
     };
 
@@ -85,29 +104,33 @@ export default function ImageSelector() {
                 return;
             }
 
-            const res = await fetch(
-                `${API_URL}/rooms/${roomId}/images/add`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(selected)
-                }
+            await api.post(
+                `/rooms/${roomId}/images/add`,
+                selected
             );
-
-            if (!res.ok) {
-                throw new Error("Failed to add images to room");
-            }
-
-            await res.json();
 
             navigate(-1);
 
         } catch (err) {
-            alert("❌ " + err.message);
+
+            console.error(err);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
         }
     };
+
+    // 🔥 avoid flicker while auth loads
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    // 🔥 extra safety
+    if (!isAdmin) {
+        return null;
+    }
 
     return (
         <div style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto" }}>

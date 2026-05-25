@@ -1,12 +1,10 @@
 import {
     Routes,
     Route,
-    Link,
     Navigate
 } from "react-router-dom";
 
-import { useEffect, useState } from "react";
-import api from "./api/api";
+import useAuth from "./auth/useAuth";
 
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
@@ -24,73 +22,21 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import NavBar from "./components/NavBar";
+
 function App() {
 
-    const [token, setToken] = useState(() => localStorage.getItem("token"));
-    const [role, setRole] = useState(null);
+    const { user, token, loading } = useAuth();
 
-    // 🔥 единствен source of truth за role
-    const fetchMe = async () => {
-        try {
-            const res = await api.get("/me");
-            setRole(res.data?.role || null);
-        } catch (err) {
-            setRole(null);
-        }
-    };
-
-    useEffect(() => {
-
-        const syncAuth = () => {
-            const t = localStorage.getItem("token");
-
-            setToken(t);
-
-            if (t) {
-                fetchMe();
-            } else {
-                setRole(null);
-            }
-        };
-
-        window.addEventListener("storage", syncAuth);
-
-        syncAuth();
-
-        return () => {
-            window.removeEventListener("storage", syncAuth);
-        };
-
-    }, []);
-
-    const isAdmin = role === "ADMIN";
+    if (loading) return null;
 
     return (
         <div style={{ padding: "20px" }}>
 
             <h1>🔥 Booking system</h1>
 
-            {!token ? (
-                <nav>
-                    <Link to="/login">Login</Link> |{" "}
-                    <Link to="/register">Register</Link>
-                </nav>
-            ) : (
-                <nav>
-                    <Link to="/">Home</Link> |{" "}
-                    <Link to="/dashboard">Dashboard</Link> |{" "}
-                    <Link to="/rooms">Rooms</Link> |{" "}
-                    <Link to="/bookings">Bookings</Link>
-
-                    {isAdmin && (
-                        <>
-                            |{" "}
-                            <Link to="/users">Users</Link> |{" "}
-                            <Link to="/images">Images</Link>
-                        </>
-                    )}
-                </nav>
-            )}
+            {/* 🔥 ONLY ONE NAVIGATION SOURCE */}
+            <NavBar />
 
             <hr style={{ marginBottom: "20px" }} />
 

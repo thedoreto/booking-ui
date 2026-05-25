@@ -1,7 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../api/api";
+import useAuth from "../auth/useAuth";
+
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
@@ -10,10 +12,24 @@ export default function ImageUpload() {
     const [file, setFile] = useState(null);
     const [filePath, setFilePath] = useState("");
     const [title, setTitle] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loadingUpload, setLoadingUpload] = useState(false);
 
     const fileRef = useRef(null);
+
     const navigate = useNavigate();
+
+    const { user, loading } = useAuth();
+
+    const isAdmin = user?.role === "ADMIN";
+
+    // 🔥 block direct URL access for non-admin
+    useEffect(() => {
+
+        if (!loading && !isAdmin) {
+            navigate("/");
+        }
+
+    }, [loading, isAdmin, navigate]);
 
     const selectFile = () => {
         fileRef.current?.click();
@@ -22,6 +38,7 @@ export default function ImageUpload() {
     const handleFile = (e) => {
 
         const f = e.target.files?.[0];
+
         if (!f) return;
 
         setFile(f);
@@ -34,10 +51,11 @@ export default function ImageUpload() {
 
         try {
 
-            setLoading(true);
+            setLoadingUpload(true);
 
-            // 1. Cloudinary upload
+            // 1. upload to Cloudinary
             const formData = new FormData();
+
             formData.append("file", file);
             formData.append("upload_preset", UPLOAD_PRESET);
 
@@ -55,27 +73,39 @@ export default function ImageUpload() {
                 throw new Error("Cloudinary upload failed");
             }
 
-            // 2. Backend save
-            await fetch(`${API_URL}/images/upload`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    url: cloudData.secure_url,
-                    title: title || file.name
-                })
+            // 2. save in backend
+            await api.post("/images/upload", {
+                url: cloudData.secure_url,
+                title: title || file.name
             });
 
-            // 3. close page + return
+            // 3. return
             navigate("/images", { replace: true });
 
         } catch (err) {
-            alert(err.message);
+
+            console.error(err);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
+
         } finally {
-            setLoading(false);
+
+            setLoadingUpload(false);
         }
     };
+
+    // 🔥 avoid flicker while auth loads
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    // 🔥 extra safety
+    if (!isAdmin) {
+        return null;
+    }
 
     return (
         <div style={{ padding: "20px", maxWidth: "600px" }}>
@@ -84,9 +114,11 @@ export default function ImageUpload() {
 
             {/* URL FIELD (read-only visual) */}
             <div style={{ marginBottom: "16px" }}>
+
                 <label>Image file</label>
 
                 <div style={{ display: "flex", gap: "10px" }}>
+
                     <input
                         value={filePath}
                         placeholder="No file selected"
@@ -97,6 +129,7 @@ export default function ImageUpload() {
                     <button onClick={selectFile}>
                         Select Image
                     </button>
+
                 </div>
 
                 <input
@@ -106,10 +139,12 @@ export default function ImageUpload() {
                     style={{ display: "none" }}
                     accept="image/*"
                 />
+
             </div>
 
             {/* TITLE */}
             <div style={{ marginBottom: "16px" }}>
+
                 <label>Title</label>
 
                 <input
@@ -117,12 +152,13 @@ export default function ImageUpload() {
                     onChange={(e) => setTitle(e.target.value)}
                     style={{ width: "100%", padding: "10px" }}
                 />
+
             </div>
 
             {/* UPLOAD BUTTON */}
             <button
                 onClick={upload}
-                disabled={loading}
+                disabled={loadingUpload}
                 style={{
                     padding: "12px 20px",
                     background: "green",
@@ -131,7 +167,7 @@ export default function ImageUpload() {
                     borderRadius: "8px"
                 }}
             >
-                {loading ? "Uploading..." : "Upload"}
+                {loadingUpload ? "Uploading..." : "Upload"}
             </button>
 
         </div>

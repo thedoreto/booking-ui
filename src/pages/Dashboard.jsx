@@ -1,32 +1,16 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../api/api";
+import useAuth from "../auth/useAuth";
 
 export default function Dashboard() {
 
-    const navigate = useNavigate();
+    const { user, logout, loading } = useAuth();
 
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        fetchMe();
-    }, []);
-
-    const fetchMe = async () => {
-        try {
-            const response = await api.get("/me");
-            setUser(response.data);
-        } catch (err) {
-            console.error(err);
-            logout();
-        }
-    };
-
-    const logout = () => {
-        localStorage.removeItem("token");
-        setUser(null);
-        navigate("/login");
-    };
+    if (loading) {
+        return (
+            <div style={{ padding: "30px" }}>
+                <p>Loading user...</p>
+            </div>
+        );
+    }
 
     return (
         <div style={{ padding: "30px" }}>
@@ -41,7 +25,7 @@ export default function Dashboard() {
                     <p>User ID: {user.id}</p>
                 </>
             ) : (
-                <p>Loading user...</p>
+                <p>No user loaded</p>
             )}
 
             <button onClick={logout}>

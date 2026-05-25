@@ -1,11 +1,20 @@
+//src/components/ProtectedRoute.jsx
+
 import { Navigate } from "react-router-dom";
+import useAuth from "../auth/useAuth";
 
 export default function ProtectedRoute({ children }) {
 
-    const token = localStorage.getItem("token");
+    const { user, loading } = useAuth();
 
-    if (!token) {
-        return <Navigate to="/login" />;
+    // докато чакаме /me да се върне
+    if (loading) {
+        return null; // можеш да сложиш spinner ако искаш
+    }
+
+    // ако няма user -> не е логнат
+    if (!user) {
+        return <Navigate to="/login" replace />;
     }
 
     return children;

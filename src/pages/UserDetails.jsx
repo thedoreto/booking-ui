@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { useParams, useNavigate, Navigate } from "react-router-dom";
+import useAuth from "../auth/useAuth";
+import api from "../api/api";
 
 export default function UserDetails() {
 
     const { id } = useParams();
     const navigate = useNavigate();
 
+    const { user, loading } = useAuth();
+
+    const isAdmin = user?.role === "ADMIN";
     const isCreateMode = !id || id === "new";
 
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
+    const [role, setRole] = useState("USER");
+
+    const [error, setError] = useState(null);
 
     const getErrorMessage = (data, fallback) => {
-
         if (!data) return fallback;
 
         return (
@@ -27,147 +30,123 @@ export default function UserDetails() {
         );
     };
 
+    // guard
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    if (!isAdmin) {
+        return <Navigate to="/" replace />;
+    }
+
     useEffect(() => {
 
         if (isCreateMode) return;
 
-        fetch(`${API_URL}/users/${id}`)
-            .then(async (res) => {
+        const load = async () => {
+            try {
+                setError(null);
 
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Failed to load user")
-                    );
-                }
-
-                return data;
-            })
-            .then(data => {
+                const res = await api.get(`/users/${id}`);
+                const data = res.data;
 
                 setName(data.name ?? "");
                 setEmail(data.email ?? "");
-                setPassword(data.password ?? "");
+                setRole(data.role ?? "USER");
 
-            })
-            .catch(err => alert(err.message));
+            } catch (err) {
+
+                const data = err?.response?.data;
+
+                setError(
+                    getErrorMessage(data, "Failed to load user")
+                );
+            }
+        };
+
+        load();
 
     }, [id]);
 
-    const save = () => {
+    const save = async () => {
 
-        const url = isCreateMode
-            ? `${API_URL}/users`
-            : `${API_URL}/users/${id}`;
+        try {
 
-        const method = isCreateMode ? "POST" : "PUT";
-
-        fetch(url, {
-            method,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
+            const payload = {
                 name,
                 email,
-                password
-            })
-        })
-            .then(async (res) => {
+                role
+            };
 
-                const data = await res.json();
+            const url = isCreateMode
+                ? "/users"
+                : `/users/${id}`;
 
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Save failed")
-                    );
-                }
+            const method = isCreateMode ? "post" : "put";
 
-                return data;
-            })
-            .then(() => {
+            await api[method](url, payload);
 
-                alert(
-                    isCreateMode
-                        ? "User created!"
-                        : "User updated!"
-                );
+            alert(isCreateMode ? "User created!" : "User updated!");
+            navigate("/users");
 
-                navigate("/users");
+        } catch (err) {
 
-            })
-            .catch(err => alert(err.message));
+            const data = err?.response?.data;
+
+            alert(
+                getErrorMessage(data, "Save failed")
+            );
+        }
     };
 
-    const deleteUser = () => {
+    const deleteUser = async () => {
 
         if (!window.confirm("Delete this user?")) return;
 
-        fetch(`${API_URL}/users/${id}`, {
-            method: "DELETE"
-        })
-            .then(async (res) => {
+        try {
 
-                let data = null;
+            await api.delete(`/users/${id}`);
 
-                try {
-                    data = await res.json();
-                } catch {
-                    // ignore empty body
-                }
+            alert("User deleted!");
+            navigate("/users");
 
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Delete failed")
-                    );
-                }
+        } catch (err) {
 
-                alert("User deleted!");
+            const data = err?.response?.data;
 
-                navigate("/users");
-
-            })
-            .catch(err => alert(err.message));
+            alert(
+                getErrorMessage(data, "Delete failed")
+            );
+        }
     };
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                marginTop: "40px"
-            }}
-        >
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginTop: "40px"
+        }}>
 
             <h2>
-                {isCreateMode
-                    ? "Create user"
-                    : "User details"}
+                {isCreateMode ? "Create user" : "User details"}
             </h2>
 
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    width: "420px"
-                }}
-            >
+            {error && (
+                <div style={{ color: "red", marginBottom: "10px" }}>
+                    {error}
+                </div>
+            )}
 
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: "10px"
-                    }}
-                >
-                    <label style={{ width: "90px" }}>
-                        Name:
-                    </label>
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px",
+                width: "420px"
+            }}>
 
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <label style={{ width: "90px" }}>Name:</label>
                     <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -175,18 +154,8 @@ export default function UserDetails() {
                     />
                 </div>
 
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: "10px"
-                    }}
-                >
-                    <label style={{ width: "90px" }}>
-                        Email:
-                    </label>
-
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <label style={{ width: "90px" }}>Email:</label>
                     <input
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -194,63 +163,33 @@ export default function UserDetails() {
                     />
                 </div>
 
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-start",
-                        gap: "10px"
-                    }}
-                >
-                    <label style={{ width: "90px" }}>
-                        Password:
-                    </label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                    <label style={{ width: "90px" }}>Role:</label>
 
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: "8px",
-                            flex: 1
-                        }}
+                    <select
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        style={{ flex: 1 }}
                     >
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={{ flex: 1 }}
-                        />
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                setShowPassword(prev => !prev)
-                            }
-                        >
-                            {showPassword ? "🙈" : "👁"}
-                        </button>
-                    </div>
+                        <option value="USER">USER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
                 </div>
 
             </div>
 
-            <div
-                style={{
-                    marginTop: "20px",
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: "10px"
-                }}
-            >
+            <div style={{
+                marginTop: "20px",
+                display: "flex",
+                gap: "10px"
+            }}>
 
                 <button onClick={save}>
                     {isCreateMode ? "Create" : "Save"}
                 </button>
 
                 {!isCreateMode && (
-                    <button
-                        onClick={deleteUser}
-                        style={{ color: "red" }}
-                    >
+                    <button onClick={deleteUser} style={{ color: "red" }}>
                         Delete
                     </button>
                 )}

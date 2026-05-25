@@ -1,35 +1,53 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../api/api";
+import useAuth from "../auth/useAuth";
 
 export default function ImageRepository() {
 
     const [images, setImages] = useState([]);
+
     const navigate = useNavigate();
 
+    const { user, loading } = useAuth();
+
+    const isAdmin = user?.role === "ADMIN";
+
+    // 🔥 BLOCK NON-ADMIN ACCESS
     useEffect(() => {
+
+        if (!loading && !isAdmin) {
+            navigate("/");
+        }
+
+    }, [loading, isAdmin, navigate]);
+
+    // 🔥 LOAD IMAGES
+    useEffect(() => {
+
+        if (!isAdmin) return;
+
         loadImages();
-    }, []);
 
-    const loadImages = () => {
+    }, [isAdmin]);
 
-        fetch(`${API_URL}/images`)
-            .then(async (res) => {
+    const loadImages = async () => {
 
-                const data = await res.json().catch(() => null);
+        try {
 
-                if (!res.ok) {
-                    throw new Error(data?.message || "Failed to load images");
-                }
+            const res = await api.get("/images");
 
-                return data;
-            })
-            .then((data) => setImages(data))
-            .catch((err) => {
-                console.error(err);
-                alert("❌ " + err.message);
-            });
+            setImages(res.data);
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
+        }
     };
 
     const deleteImage = async (id) => {
@@ -42,21 +60,30 @@ export default function ImageRepository() {
 
         try {
 
-            const res = await fetch(`${API_URL}/images/${id}`, {
-                method: "DELETE"
-            });
-
-            if (!res.ok) {
-                throw new Error("Failed to delete image");
-            }
+            await api.delete(`/images/${id}`);
 
             loadImages();
 
         } catch (err) {
+
             console.error(err);
-            alert("❌ " + err.message);
+
+            alert(
+                "❌ " +
+                (err?.response?.data?.message || err.message)
+            );
         }
     };
+
+    // 🔥 avoid flicker while auth loads
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    // 🔥 extra safety
+    if (!isAdmin) {
+        return null;
+    }
 
     return (
         <div style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto" }}>

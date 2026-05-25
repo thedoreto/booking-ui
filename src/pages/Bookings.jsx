@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from "../api/api";
+import useAuth from "../auth/useAuth";
 
 export default function Bookings() {
 
+    const { user, loading } = useAuth();
+
     const [bookings, setBookings] = useState([]);
     const [viewMode, setViewMode] = useState("active");
+
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    const isAdmin = user?.role === "ADMIN";
 
     const getErrorMessage = (data, fallback) => {
         if (!data) return fallback;
@@ -19,72 +27,68 @@ export default function Bookings() {
         );
     };
 
+    // SAME endpoints for both roles
+    // backend decides what user sees
     const getEndpoint = (mode) => {
 
         switch (mode) {
+
             case "active":
                 return "/bookings/active";
+
             case "all":
                 return "/bookings/future";
+
             case "history":
                 return "/bookings/history";
+
             default:
                 return "/bookings/active";
         }
     };
 
-    const loadBookings = () => {
+    const loadBookings = async () => {
 
-        fetch(`${API_URL}${getEndpoint(viewMode)}`)
-            .then(async (res) => {
+        try {
 
-                const data = await res.json().catch(() => null);
+            const res = await api.get(getEndpoint(viewMode));
 
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Failed to load bookings")
-                    );
-                }
+            setBookings(res.data);
 
-                return data;
-            })
-            .then(data => {
-                setBookings(data);
-            })
-            .catch(err => {
-                alert("❌ " + err.message);
-            });
+        } catch (err) {
+
+            const data = err?.response?.data;
+
+            alert(
+                "❌ " +
+                getErrorMessage(data, "Failed to load bookings")
+            );
+        }
     };
 
     useEffect(() => {
         loadBookings();
     }, [viewMode]);
 
-    const cancelBooking = (id) => {
+    const cancelBooking = async (id) => {
 
         if (!window.confirm("Cancel this booking?")) return;
 
-        fetch(`${API_URL}/bookings/${id}/cancel`, {
-            method: "PUT"
-        })
-            .then(async (res) => {
+        try {
 
-                const data = await res.json().catch(() => null);
+            await api.put(`/bookings/${id}/cancel`);
 
-                if (!res.ok) {
-                    throw new Error(
-                        getErrorMessage(data, "Cancel failed")
-                    );
-                }
+            loadBookings();
 
-                return data;
-            })
-            .then(() => {
-                loadBookings();
-            })
-            .catch(err => {
-                alert("❌ " + err.message);
-            });
+        } catch (err) {
+
+            const data = err?.response?.data;
+
+            alert(
+                "❌ " +
+                getErrorMessage(data, "Cancel failed")
+            );
+        }
     };
 
     return (
@@ -105,7 +109,9 @@ export default function Bookings() {
                     }}
                 >
 
-                    <div>{b.userName}</div>
+                    {isAdmin && (
+                        <div>{b.userName}</div>
+                    )}
 
                     <div>
                         Room {b.roomNumber} ({b.roomType})

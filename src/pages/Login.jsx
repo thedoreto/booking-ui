@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import useAuth from "../auth/useAuth";
 
 export default function Login() {
 
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,10 +29,8 @@ export default function Login() {
                 throw new Error("No token returned from backend");
             }
 
-            localStorage.setItem("token", token);
-
-            // 🔥 FORCE SYNC ACROSS APP
-            window.dispatchEvent(new Event("storage"));
+            // 🔥 central auth handling
+            await login(token);
 
             navigate("/dashboard");
 
