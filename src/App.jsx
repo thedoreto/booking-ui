@@ -6,6 +6,7 @@ import {
 
 import useAuth from "./auth/useAuth";
 
+import ChatWindow from "./components/ChatWindow";
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
 import Users from "./pages/Users";
@@ -66,6 +67,8 @@ function App() {
                 <Route path="*" element={<Navigate to={token ? "/" : "/login"} />} />
 
             </Routes>
+
+            {user && <ChatWindow user={user} />}
 
         </div>
     );

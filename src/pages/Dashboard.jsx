@@ -1,5 +1,4 @@
 import useAuth from "../auth/useAuth";
-import ChatWindow from "../components/ChatWindow";
 
 export default function Dashboard() {
 
@@ -24,7 +23,6 @@ export default function Dashboard() {
                     <p>Email: {user.email}</p>
                     <p>Role: {user.role}</p>
                     <p>User ID: {user.id}</p>
-                    <ChatWindow user={user} />
                 </>
             ) : (
                 <p>No user loaded</p>
