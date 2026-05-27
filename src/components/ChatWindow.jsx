@@ -45,9 +45,29 @@ export default function ChatWindow({ user }) {
 
             const data = response.data;
 
+            // ✅ FIX: support new structure { reply: { type, data } }
+            let assistantContent;
+
+            if (data?.reply && typeof data.reply === "object") {
+
+                const reply = data.reply;
+
+                if (reply.type === "ok") {
+                    assistantContent = JSON.stringify(reply.data, null, 2);
+                } else if (reply.type === "error") {
+                    assistantContent = reply.data || "Грешка";
+                } else {
+                    assistantContent = JSON.stringify(reply);
+                }
+
+            } else {
+                // fallback for old string format
+                assistantContent = data.reply;
+            }
+
             const assistantMessage = {
                 role: "assistant",
-                content: data.reply
+                content: assistantContent
             };
 
             setMessages(prev => [...prev, assistantMessage]);
