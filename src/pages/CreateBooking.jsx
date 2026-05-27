@@ -6,17 +6,17 @@ import useAuth from "../auth/useAuth";
 export default function CreateBooking() {
 
     const navigate = useNavigate();
-
     const { user, loading } = useAuth();
 
     const [users, setUsers] = useState([]);
-    const [rooms, setRooms] = useState([]);
 
     const [userId, setUserId] = useState("");
-    const [roomId, setRoomId] = useState("");
 
     const [checkInDate, setCheckInDate] = useState("");
     const [checkOutDate, setCheckOutDate] = useState("");
+
+    const [availableRooms, setAvailableRooms] = useState([]);
+    const [selectedRooms, setSelectedRooms] = useState([]);
 
     const isAdmin = user?.role === "ADMIN";
 
@@ -28,26 +28,15 @@ export default function CreateBooking() {
 
             try {
 
-                // 🔥 rooms for everybody
-                const roomsRes = await api.get("/rooms");
-                setRooms(roomsRes.data);
-
-                // 🔥 admin -> load users dropdown
                 if (isAdmin) {
-
                     const usersRes = await api.get("/users");
                     setUsers(usersRes.data);
-
                 } else if (user?.id) {
-
-                    // 🔥 normal user -> auto select self
                     setUserId(user.id);
                 }
 
             } catch (err) {
-
                 console.error(err);
-
                 alert("❌ Failed to load data");
             }
         };
@@ -56,21 +45,55 @@ export default function CreateBooking() {
 
     }, [loading, isAdmin, user]);
 
+    const checkAvailability = async () => {
+
+        try {
+
+            const res = await api.get("/rooms/available", {
+                params: {
+                    checkInDate,
+                    checkOutDate
+                }
+            });
+
+            setAvailableRooms(res.data);
+            setSelectedRooms([]);
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert(
+                err?.response?.data?.message ||
+                "Invalid dates or server error"
+            );
+        }
+    };
+
+    const toggleRoom = (roomId) => {
+
+        setSelectedRooms(prev =>
+
+            prev.includes(roomId)
+                ? prev.filter(id => id !== roomId)
+                : [...prev, roomId]
+        );
+    };
+
     const createBooking = async () => {
 
         try {
 
-            const payload = {
+            const payload = selectedRooms.map(roomId => ({
                 userId,
                 roomId,
                 checkInDate,
                 checkOutDate
-            };
+            }));
 
             await api.post("/bookings", payload);
 
             alert("Booking created!");
-
             navigate("/bookings");
 
         } catch (err) {
@@ -84,17 +107,15 @@ export default function CreateBooking() {
         }
     };
 
-    if (loading) {
-        return <div>Loading...</div>;
-    }
+    if (loading) return <div>Loading...</div>;
 
     return (
         <div>
 
             <h2>Create booking</h2>
 
-            {/* ADMIN ONLY */}
-            {isAdmin && (
+            {/* USER */}
+            {isAdmin ? (
                 <div>
                     <label>User:</label>
 
@@ -104,42 +125,20 @@ export default function CreateBooking() {
                     >
                         <option value="">Select user</option>
 
-                        {users.map(c => (
-                            <option key={c.id} value={c.id}>
-                                {c.name} ({c.email})
+                        {users.map(u => (
+                            <option key={u.id} value={u.id}>
+                                {u.name} ({u.email})
                             </option>
                         ))}
                     </select>
                 </div>
+            ) : (
+                <div>Logged as: {user?.email}</div>
             )}
 
-            {/* NORMAL USER */}
-            {!isAdmin && (
-                <div style={{ marginBottom: "10px" }}>
-                    Logged as: {user?.email}
-                </div>
-            )}
-
-            <div>
-                <label>Room:</label>
-
-                <select
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                >
-                    <option value="">Select room</option>
-
-                    {rooms.map(r => (
-                        <option key={r.id} value={r.id}>
-                            Room {r.roomNumber} ({r.type})
-                        </option>
-                    ))}
-                </select>
-            </div>
-
+            {/* DATES */}
             <div>
                 <label>Check-in:</label>
-
                 <input
                     type="date"
                     value={checkInDate}
@@ -149,7 +148,6 @@ export default function CreateBooking() {
 
             <div>
                 <label>Check-out:</label>
-
                 <input
                     type="date"
                     value={checkOutDate}
@@ -157,12 +155,48 @@ export default function CreateBooking() {
                 />
             </div>
 
+            {/* CHECK AVAILABILITY */}
             <button
-                onClick={createBooking}
+                onClick={checkAvailability}
                 style={{ marginTop: "10px" }}
             >
-                Create booking
+                Check availability
             </button>
+
+            {/* AVAILABLE ROOMS */}
+            {availableRooms.length > 0 && (
+                <div style={{ marginTop: "20px" }}>
+                    <h3>Available rooms</h3>
+
+                    {availableRooms.map(room => (
+                        <div
+                            key={room.id}
+                            onClick={() => toggleRoom(room.id)}
+                            style={{
+                                padding: "10px",
+                                margin: "6px 0",
+                                border: "1px solid #ccc",
+                                cursor: "pointer",
+                                backgroundColor: selectedRooms.includes(room.id)
+                                    ? "#cce5ff"
+                                    : "white"
+                            }}
+                        >
+                            Room {room.roomNumber} ({room.type})
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* CREATE BOOKING */}
+            {selectedRooms.length > 0 && (
+                <button
+                    onClick={createBooking}
+                    style={{ marginTop: "20px" }}
+                >
+                    Create reservation ({selectedRooms.length})
+                </button>
+            )}
 
         </div>
     );
