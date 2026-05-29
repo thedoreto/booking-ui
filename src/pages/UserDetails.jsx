@@ -168,6 +168,7 @@ export default function UserDetails() {
 
                     <select
                         value={role}
+                        disabled={user?.id === id}
                         onChange={(e) => setRole(e.target.value)}
                         style={{ flex: 1 }}
                     >
