@@ -275,7 +275,8 @@ const styles = {
         lineHeight: "1.45",
         fontSize: "14px",
         wordBreak: "break-word",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)"
+        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+        whiteSpace: "pre-line"
     },
 
     inputContainer: {
