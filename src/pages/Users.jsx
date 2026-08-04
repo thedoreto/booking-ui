@@ -59,11 +59,7 @@ export default function Users() {
                 ))}
             </div>
 
-            <hr style={{ margin: "12px 0" }} />
 
-            <Link to="/users/new">
-                <button>Add new user</button>
-            </Link>
         </div>
     );
 }
