@@ -3,11 +3,21 @@ import useAuth from "../auth/useAuth";
 
 export default function NavBar() {
 
-    const { user, token, logout, loading } = useAuth();
+    const { user, token, loading } = useAuth();
 
     if (loading) return null;
 
     const isAdmin = user?.role === "ADMIN";
+
+    const linkStyle = {
+        color: "#1c4498",
+        textDecoration: "none",
+        fontWeight: "500"
+    };
+
+    const separatorStyle = {
+        color: "#d1d5db"
+    };
 
     return (
         <nav
@@ -20,51 +30,65 @@ export default function NavBar() {
                 borderBottom: "1px solid #ddd"
             }}
         >
+
             {!token ? (
                 <>
-                    <Link to="/login">Login</Link>
-                    <span>|</span>
-                    <Link to="/register">Register</Link>
+                    <Link to="/login" style={linkStyle}>
+                        Login
+                    </Link>
+
+                    <span style={separatorStyle}>|</span>
+
+                    <Link to="/register" style={linkStyle}>
+                        Register
+                    </Link>
                 </>
             ) : (
                 <>
-                    <Link to="/">Home</Link>
-                    <span>|</span>
 
-                    <Link to="/dashboard">Dashboard</Link>
-                    <span>|</span>
+                    <Link to="/hotelinfo" style={linkStyle}>
+                        Hotel Info
+                    </Link>
 
-                    <Link to="/rooms">Rooms</Link>
-                    <span>|</span>
+                    <span style={separatorStyle}>|</span>
 
-                    <Link to="/bookings">Bookings</Link>
+                    <Link to="/dashboard" style={linkStyle}>
+                        Dashboard
+                    </Link>
+
+                    <span style={separatorStyle}>|</span>
+
+                    <Link to="/rooms" style={linkStyle}>
+                        Rooms
+                    </Link>
+
+                    <span style={separatorStyle}>|</span>
+
+                    <Link to="/bookings" style={linkStyle}>
+                        Bookings
+                    </Link>
 
                     {isAdmin && (
                         <>
-                            <span>|</span>
-                            <Link to="/users">Users</Link>
-                            <span>|</span>
-                            <Link to="/images">Image Repository</Link>
+                            <span style={separatorStyle}>|</span>
+
+                            <Link to="/users" style={linkStyle}>
+                                Users
+                            </Link>
+
+                            <span style={separatorStyle}>|</span>
+
+                            <Link to="/images" style={linkStyle}>
+                                Image Repository
+                            </Link>
+
                         </>
                     )}
 
-                    {/* spacer pushes logout right */}
-                    <div style={{ marginLeft: "30px" }} />
 
-                    <button
-                        onClick={logout}
-                        style={{
-                            padding: "6px 12px",
-                            cursor: "pointer",
-                            border: "1px solid #ccc",
-                            borderRadius: "6px",
-                            background: "white"
-                        }}
-                    >
-                        Logout
-                    </button>
                 </>
             )}
+
         </nav>
     );
 }
