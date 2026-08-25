@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import api from "../api/api";
+import aiApi from "../api/aiApi";
 
 export default function ChatWindow({ user }) {
 
@@ -39,7 +39,7 @@ export default function ChatWindow({ user }) {
 
         try {
 
-            const response = await api.post("/api/chat", {
+            const response = await aiApi.post("/api/chat", {
                 messages: updatedMessages
             });
 
