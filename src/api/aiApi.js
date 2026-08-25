@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const aiApi = axios.create({
-    baseURL: "http://localhost:8081"
+    baseURL: import.meta.env.VITE_AI_API_URL
 });
 
 export default aiApi;
