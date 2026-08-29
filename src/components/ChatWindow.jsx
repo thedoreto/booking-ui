@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import aiApi from "../api/aiApi";
 
-export default function ChatWindow({ user, hotelId = "40_robbers" }) {
+export default function ChatWindow({ user, hotelId = "seven_stars" }) {
 
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
