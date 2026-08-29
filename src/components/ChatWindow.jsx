@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import aiApi from "../api/aiApi";
 
-export default function ChatWindow({ user }) {
+export default function ChatWindow({ user, hotelId = "40_robbers" }) {
 
     const [isMinimized, setIsMinimized] = useState(false);
+    const [shortcuts, setShortcuts] = useState([]);
 
     const [messages, setMessages] = useState([
         {
@@ -13,8 +14,24 @@ export default function ChatWindow({ user }) {
     ]);
 
     const [input, setInput] = useState("");
-
     const messagesEndRef = useRef(null);
+
+    // ✔ Зареждане на бутоните (shortcuts) при отваряне на чата
+    useEffect(() => {
+        async function fetchShortcuts() {
+            try {
+                const response = await aiApi.get("/api/shortcuts", {
+                    params: { hotelId }
+                });
+                if (response.data && Array.isArray(response.data)) {
+                    setShortcuts(response.data);
+                }
+            } catch (error) {
+                console.error("Грешка при зареждане на бутоните:", error);
+            }
+        }
+        fetchShortcuts();
+    }, [hotelId]);
 
     // ✔ auto scroll надолу
     useEffect(() => {
@@ -23,13 +40,13 @@ export default function ChatWindow({ user }) {
         });
     }, [messages]);
 
-    async function sendMessage() {
-
-        if (!input.trim()) return;
+    // Обща функция със стандартни параметри
+    async function sendPayloadToApi(messageText, shortcutId = null) {
+        if (!messageText.trim() && !shortcutId) return;
 
         const userMessage = {
             role: "user",
-            content: input
+            content: messageText
         };
 
         const updatedMessages = [...messages, userMessage];
@@ -38,18 +55,23 @@ export default function ChatWindow({ user }) {
         setInput("");
 
         try {
-
-            const response = await aiApi.post("/api/chat", {
+            const requestBody = {
+                hotelId,
                 messages: updatedMessages
-            });
+            };
 
+            if (shortcutId) {
+                requestBody.shortcutId = shortcutId;
+            }
+
+            console.log("📤 Изпращане към API:", requestBody);
+
+            const response = await aiApi.post("/api/chat", requestBody);
             const data = response.data;
 
-            // ✅ FIX: support new structure { reply: { type, data } }
             let assistantContent;
 
             if (data?.reply && typeof data.reply === "object") {
-
                 const reply = data.reply;
 
                 if (reply.type === "ok") {
@@ -59,9 +81,7 @@ export default function ChatWindow({ user }) {
                 } else {
                     assistantContent = JSON.stringify(reply);
                 }
-
             } else {
-                // fallback for old string format
                 assistantContent = data.reply;
             }
 
@@ -73,7 +93,6 @@ export default function ChatWindow({ user }) {
             setMessages(prev => [...prev, assistantMessage]);
 
         } catch (error) {
-
             setMessages(prev => [
                 ...prev,
                 {
@@ -84,31 +103,32 @@ export default function ChatWindow({ user }) {
         }
     }
 
-    return (
+    async function sendMessage() {
+        await sendPayloadToApi(input, null);
+    }
 
+    async function handleShortcutClick(shortcut) {
+        await sendPayloadToApi(shortcut.label, shortcut.shortcutId);
+    }
+
+    return (
         <div
             style={{
                 ...styles.wrapper,
-                height: isMinimized ? "70px" : "520px"
+                height: isMinimized ? "70px" : "560px"
             }}
         >
-
             <div style={styles.header}>
-
                 <div style={styles.headerLeft}>
-
                     <div style={styles.onlineDot}></div>
-
                     <div>
                         <div style={styles.title}>
                             AI Assistant
                         </div>
-
                         <div style={styles.onlineText}>
                             Online
                         </div>
                     </div>
-
                 </div>
 
                 <button
@@ -117,16 +137,12 @@ export default function ChatWindow({ user }) {
                 >
                     {isMinimized ? "▢" : "—"}
                 </button>
-
             </div>
 
             {!isMinimized && (
                 <>
-
                     <div style={styles.messages}>
-
                         {messages.map((msg, index) => (
-
                             <div
                                 key={index}
                                 style={{
@@ -137,7 +153,6 @@ export default function ChatWindow({ user }) {
                                             : "flex-start"
                                 }}
                             >
-
                                 <div
                                     style={{
                                         ...styles.messageBubble,
@@ -153,17 +168,26 @@ export default function ChatWindow({ user }) {
                                 >
                                     {msg.content}
                                 </div>
-
                             </div>
-
                         ))}
-
                         <div ref={messagesEndRef}></div>
-
                     </div>
 
-                    <div style={styles.inputContainer}>
+                    {shortcuts.length > 0 && (
+                        <div style={styles.shortcutsContainer}>
+                            {shortcuts.map((sc) => (
+                                <button
+                                    key={sc.shortcutId || sc._id}
+                                    onClick={() => handleShortcutClick(sc)}
+                                    style={styles.shortcutChip}
+                                >
+                                    {sc.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
+                    <div style={styles.inputContainer}>
                         <input
                             type="text"
                             value={input}
@@ -183,18 +207,14 @@ export default function ChatWindow({ user }) {
                         >
                             Send
                         </button>
-
                     </div>
-
                 </>
             )}
-
         </div>
     );
 }
 
 const styles = {
-
     wrapper: {
         width: "100%",
         maxWidth: "420px",
@@ -277,6 +297,29 @@ const styles = {
         wordBreak: "break-word",
         boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
         whiteSpace: "pre-line"
+    },
+
+    shortcutsContainer: {
+        display: "flex",
+        gap: "8px",
+        padding: "8px 14px",
+        backgroundColor: "#f9fafb",
+        borderTop: "1px solid #e5e7eb",
+        overflowX: "auto",
+        whiteSpace: "nowrap"
+    },
+
+    shortcutChip: {
+        backgroundColor: "#eff6ff",
+        color: "#1d4ed8",
+        border: "1px solid #bfdbfe",
+        borderRadius: "12px",
+        padding: "6px 12px",
+        fontSize: "13px",
+        fontWeight: "500",
+        cursor: "pointer",
+        flexShrink: 0,
+        transition: "background-color 0.2s"
     },
 
     inputContainer: {
