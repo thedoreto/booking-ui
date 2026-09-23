@@ -6,7 +6,7 @@ import {
 
 import useAuth from "./auth/useAuth";
 
-import ChatWindow from "./components/ChatWindow";
+import ChatWindow from "./components/chatWindow/ChatWindow";
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
 import Users from "./pages/Users";
