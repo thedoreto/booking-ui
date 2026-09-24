@@ -14,6 +14,7 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
         messagesEndRef,
         isDatePickerOpen,       // 2. Вземи това от хука
         setIsDatePickerOpen,    // 2. И това
+        datePickerPrefill,
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,    // 2. И това
@@ -104,6 +105,8 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
                     isOpen={isDatePickerOpen}
                     onClose={() => setIsDatePickerOpen(false)}
                     onSelectDates={handleDatesSelected}
+                    initialStartDate={datePickerPrefill?.startDate}
+                    initialEndDate={datePickerPrefill?.endDate}
                 />
             )}
         </div>

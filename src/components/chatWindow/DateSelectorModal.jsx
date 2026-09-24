@@ -5,11 +5,16 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import 'dayjs/locale/bg';
 
-export default function DateSelectorModal({ isOpen, onClose, onSelectDates }) {
-    if (!isOpen) return null;
+// initialStartDate/initialEndDate ('YYYY-MM-DD', по избор) – дати, казани в чата
+export default function DateSelectorModal({ isOpen, onClose, onSelectDates, initialStartDate, initialEndDate }) {
+    const [startDate, setStartDate] = useState(() =>
+        initialStartDate ? dayjs(initialStartDate) : dayjs()
+    );
+    const [endDate, setEndDate] = useState(() =>
+        initialEndDate ? dayjs(initialEndDate) : (initialStartDate ? dayjs(initialStartDate) : dayjs()).add(1, 'day')
+    );
 
-    const [startDate, setStartDate] = useState(dayjs());
-    const [endDate, setEndDate] = useState(dayjs().add(1, 'day'));
+    if (!isOpen) return null;
 
     const handleConfirm = () => {
         if (startDate && endDate) {

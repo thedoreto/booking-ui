@@ -47,7 +47,7 @@ Env (`.env`, всички `VITE_*`): `VITE_API_URL` (основен бекенд
 - `AuthContext.jsx` експортира и `useAuth`, но `App.jsx` го импортира от `auth/useAuth.js` – две места, поддържай ги съгласувани.
 - `Users.jsx` и `RoomDetails.jsx` четат `VITE_API_URL` директно (`API_URL`), а не през `api` инстанса – няма автоматичен токен/401 handling там.
 - `ChatWindow` получава `hotelId = "40_robbers"` по подразбиране (в `App.jsx` не се подава) – това е ключът за multi-tenant колекциите в booking-ai. Името на хотела в хедъра е хардкоднато в `App.jsx`.
-- Отговорът на `/api/chat` е `{ reply|response, actionType }`; `actionType === "OPEN_DATE_PICKER"` отваря `DateSelectorModal`; избраните дати отиват в `POST /api/rooms/available` (без LLM). `actionType === "SELECT_ROOMS"` + `data: {startDate, endDate, rooms}` показва `RoomSelection` в съобщението; бутонът „Резервирай“ вика `POST /api/bookings`. Ако `reply` е обект, се показва като JSON.
+- Отговорът на `/api/chat` е `{ reply|response, actionType }`; `actionType === "OPEN_DATE_PICKER"` отваря `DateSelectorModal`, попълнен с `data.startDate`/`data.endDate`, ако ги има; избраните дати отиват в `POST /api/rooms/available` (без LLM). `actionType === "SELECT_ROOMS"` + `data: {startDate, endDate, rooms}` показва `RoomSelection` в съобщението; бутонът „Резервирай“ вика `POST /api/bookings`. Ако `reply` е обект, се показва като JSON.
 - В `main.jsx` има голям закоментиран блок; `App.jsx` не е обвит в `Suspense`/lazy – всичко е в един bundle.
 - `git status`: чат компонентът е местен от `components/ChatWindow.jsx` към `components/chatWindow/` (в процес на commit) – импортите трябва да сочат към новата папка.
 

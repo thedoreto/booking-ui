@@ -13,6 +13,8 @@ export function useChat(user, hotelId) {
     ]);
     const [input, setInput] = useState("");
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+    // Дати, казани в чата ({ startDate?, endDate? }), с които календарът се отваря попълнен
+    const [datePickerPrefill, setDatePickerPrefill] = useState(null);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -98,6 +100,7 @@ export function useChat(user, hotelId) {
 
         // Проверяваме дали бекендът изисква отваряне на календара
         if (actionType === "OPEN_DATE_PICKER") {
+            setDatePickerPrefill(actionData || null);
             setIsDatePickerOpen(true);
         }
     }
@@ -162,6 +165,7 @@ export function useChat(user, hotelId) {
         messagesEndRef,
         isDatePickerOpen,
         setIsDatePickerOpen,
+        datePickerPrefill,
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,
