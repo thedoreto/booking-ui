@@ -1,6 +1,7 @@
 import { useChat } from "./useChat.js";
 import { styles } from "./ChatWindow.styles.js";
 import DateSelectorModal from "./DateSelectorModal.jsx"; // 1. Добави този импорт
+import RoomSelection from "./RoomSelection.jsx";
 
 export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robbers
     const {
@@ -15,7 +16,8 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
         setIsDatePickerOpen,    // 2. И това
         sendMessage,
         handleShortcutClick,
-        handleDatesSelected     // 2. И това
+        handleDatesSelected,    // 2. И това
+        handleBookRooms
     } = useChat(user, hotelId);
 
     return (
@@ -52,6 +54,12 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
                                     }}
                                 >
                                     {msg.content}
+                                    {msg.roomSelection && (
+                                        <RoomSelection
+                                            selection={msg.roomSelection}
+                                            onBook={(roomIds) => handleBookRooms(index, roomIds)}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         ))}

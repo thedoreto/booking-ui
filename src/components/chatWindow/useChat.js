@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import dayjs from "dayjs";
 import aiApi from "../../api/aiApi.js";
 
 export function useChat(user, hotelId) {
@@ -44,7 +45,9 @@ export function useChat(user, hotelId) {
         setInput("");
 
         try {
-            const requestBody = { hotelId, userId: user.id, messages: updatedMessages };
+            // Към бекенда пращаме само role/content, без данните за UI (списъци със стаи и т.н.)
+            const history = updatedMessages.map(({ role, content }) => ({ role, content }));
+            const requestBody = { hotelId, userId: user.id, messages: history };
             if (shortcutId) requestBody.shortcutId = shortcutId;
 
             const response = await aiApi.post("/api/chat", requestBody);
@@ -67,12 +70,7 @@ export function useChat(user, hotelId) {
                 assistantContent = responseText;
             }
 
-            setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
-
-            // Проверяваме дали бекендът изисква отваряне на календара
-            if (actionType === "OPEN_DATE_PICKER") {
-                setIsDatePickerOpen(true);
-            }
+            addAssistantMessage(assistantContent, actionType, data?.data);
         } catch (error) {
             setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
         }
@@ -87,10 +85,71 @@ export function useChat(user, hotelId) {
         await sendPayloadToApi(shortcut.label, shortcutId);
     }
 
-    // Функция, която се извиква, когато потребителят избере дати от календара
+    // Добавя отговор на асистента и изпълнява действието за UI, ако има такова
+    function addAssistantMessage(content, actionType, actionData) {
+        const message = { role: "assistant", content };
+
+        // Списък със свободни стаи – показваме го с избор и бутон за резервация
+        if (actionType === "SELECT_ROOMS" && actionData?.rooms?.length) {
+            message.roomSelection = { ...actionData, status: "open" };
+        }
+
+        setMessages(prev => [...prev, message]);
+
+        // Проверяваме дали бекендът изисква отваряне на календара
+        if (actionType === "OPEN_DATE_PICKER") {
+            setIsDatePickerOpen(true);
+        }
+    }
+
+    function setRoomSelectionStatus(messageIndex, status) {
+        setMessages(prev => prev.map((msg, i) =>
+            i === messageIndex && msg.roomSelection
+                ? { ...msg, roomSelection: { ...msg.roomSelection, status } }
+                : msg
+        ));
+    }
+
+    // Функция, която се извиква, когато потребителят избере дати от календара.
+    // Свободните стаи идват директно от бекенда, без LLM.
     async function handleDatesSelected(startDate, endDate) {
         setIsDatePickerOpen(false);
-        await sendPayloadToApi(`Провери свободни стаи от ${startDate} до ${endDate}`);
+        setMessages(prev => [...prev, {
+            role: "user",
+            content: `Свободни стаи от ${dayjs(startDate).format("DD.MM.YYYY")} до ${dayjs(endDate).format("DD.MM.YYYY")}`
+        }]);
+
+        try {
+            const response = await aiApi.post("/api/rooms/available", {
+                hotelId, userId: user.id, startDate, endDate
+            });
+            addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
+        } catch {
+            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+        }
+    }
+
+    // Резервира избраните стаи от списъка в съобщение messageIndex, без LLM
+    async function handleBookRooms(messageIndex, roomIds) {
+        const selection = messages[messageIndex]?.roomSelection;
+        if (!selection || roomIds.length === 0) return;
+
+        setRoomSelectionStatus(messageIndex, "booking");
+        try {
+            const response = await aiApi.post("/api/bookings", {
+                hotelId,
+                userId: user.id,
+                startDate: selection.startDate,
+                endDate: selection.endDate,
+                roomIds
+            });
+            const booked = response.data?.actionType === "BOOKING_CONFIRMED";
+            setRoomSelectionStatus(messageIndex, booked ? "booked" : "open");
+            addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
+        } catch {
+            setRoomSelectionStatus(messageIndex, "open");
+            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+        }
     }
 
     return {
@@ -105,6 +164,7 @@ export function useChat(user, hotelId) {
         setIsDatePickerOpen,
         sendMessage,
         handleShortcutClick,
-        handleDatesSelected
+        handleDatesSelected,
+        handleBookRooms
     };
 }

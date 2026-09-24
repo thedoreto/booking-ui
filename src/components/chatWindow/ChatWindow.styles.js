@@ -103,5 +103,31 @@ export const styles = {
         cursor: "pointer",
         fontSize: "14px",
         fontWeight: "600"
+    },
+    roomList: {
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        marginTop: "10px"
+    },
+    roomCard: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "10px 12px",
+        borderRadius: "12px",
+        border: "1px solid #d1d5db",
+        backgroundColor: "white"
+    },
+    roomTitle: { fontSize: "14px", fontWeight: "600" },
+    roomPrice: { fontSize: "13px", color: "#4b5563", marginTop: "2px" },
+    bookButton: {
+        border: "none",
+        backgroundColor: "#2563eb",
+        color: "white",
+        padding: "10px 14px",
+        borderRadius: "12px",
+        fontSize: "14px",
+        fontWeight: "600"
     }
 };

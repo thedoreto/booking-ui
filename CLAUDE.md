@@ -47,7 +47,7 @@ Env (`.env`, всички `VITE_*`): `VITE_API_URL` (основен бекенд
 - `AuthContext.jsx` експортира и `useAuth`, но `App.jsx` го импортира от `auth/useAuth.js` – две места, поддържай ги съгласувани.
 - `Users.jsx` и `RoomDetails.jsx` четат `VITE_API_URL` директно (`API_URL`), а не през `api` инстанса – няма автоматичен токен/401 handling там.
 - `ChatWindow` получава `hotelId = "40_robbers"` по подразбиране (в `App.jsx` не се подава) – това е ключът за multi-tenant колекциите в booking-ai. Името на хотела в хедъра е хардкоднато в `App.jsx`.
-- Отговорът на `/api/chat` е `{ reply|response, actionType }`; `actionType === "OPEN_DATE_PICKER"` отваря `DateSelectorModal` и после праща съобщение "Провери свободни стаи от … до …". Ако `reply` е обект, се показва като JSON.
+- Отговорът на `/api/chat` е `{ reply|response, actionType }`; `actionType === "OPEN_DATE_PICKER"` отваря `DateSelectorModal`; избраните дати отиват в `POST /api/rooms/available` (без LLM). `actionType === "SELECT_ROOMS"` + `data: {startDate, endDate, rooms}` показва `RoomSelection` в съобщението; бутонът „Резервирай“ вика `POST /api/bookings`. Ако `reply` е обект, се показва като JSON.
 - В `main.jsx` има голям закоментиран блок; `App.jsx` не е обвит в `Suspense`/lazy – всичко е в един bundle.
 - `git status`: чат компонентът е местен от `components/ChatWindow.jsx` към `components/chatWindow/` (в процес на commit) – импортите трябва да сочат към новата папка.
 
@@ -55,7 +55,9 @@ Env (`.env`, всички `VITE_*`): `VITE_API_URL` (основен бекенд
 Repo: `../booking-ai` (`github.com/thedoreto/booking-ai`) – Java 17 / Spring Boot 3.4 / LangChain4j (Gemini) + MongoDB RAG + Kafka. Има собствен `CLAUDE.md`.
 - **Entry point (бекенд):** `com.hotel.BookingAiApplication`; HTTP контролер: `langchain/controller/AiLangChainController.java` (`@RequestMapping("/api")`).
 - **Контракт, който UI ползва** (`src/components/chatWindow/useChat.js` през `api/aiApi.js`):
-  - `POST /api/chat` – body `{ hotelId, userId, messages[], shortcutId? }` → `{ reply, actionType }`
+  - `POST /api/chat` – body `{ hotelId, userId, messages[], shortcutId? }` → `{ reply, actionType, data }`
+  - `POST /api/rooms/available` – body `{ hotelId, userId, startDate, endDate }` → `{ reply, actionType: "SELECT_ROOMS"|null, data }`
+  - `POST /api/bookings` – body `{ hotelId, userId, startDate, endDate, roomIds[] }` → `{ reply, actionType: "BOOKING_CONFIRMED"|null, data }`
   - `GET /api/shortcuts?hotelId=…` – бързи въпроси за бутоните в чата (без LLM)
 - Локално: `./mvnw spring-boot:run` в `../booking-ai` (порт **8081**), после `VITE_AI_API_URL=http://localhost:8081`. Прод: Render (`booking-ai-3s50.onrender.com`, cold start).
 - CORS е отворен за `/api/**`. Промяна на request/response формата се прави и на двете места (`AiLangChainController` ↔ `useChat.js`).
