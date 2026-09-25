@@ -15,6 +15,10 @@ export default function CreateBooking() {
     const [checkInDate, setCheckInDate] = useState("");
     const [checkOutDate, setCheckOutDate] = useState("");
 
+    // Типовете стаи на хотела ([{ code, name }]) от бекенда; "" = всички типове
+    const [roomTypes, setRoomTypes] = useState([]);
+    const [roomType, setRoomType] = useState("");
+
     const [availableRooms, setAvailableRooms] = useState([]);
     const [selectedRooms, setSelectedRooms] = useState([]);
 
@@ -45,6 +49,25 @@ export default function CreateBooking() {
 
     }, [loading, isAdmin, user]);
 
+    useEffect(() => {
+
+        const loadRoomTypes = async () => {
+            try {
+                const res = await api.get("/rooms/types");
+                setRoomTypes(res.data);
+            } catch (err) {
+                // Без типове търсим във всички стаи
+                console.error(err);
+            }
+        };
+
+        loadRoomTypes();
+
+    }, []);
+
+    const roomTypeName = (code) =>
+        roomTypes.find(t => t.code === code)?.name || code;
+
     const checkAvailability = async () => {
 
         try {
@@ -52,7 +75,8 @@ export default function CreateBooking() {
             const res = await api.get("/rooms/available", {
                 params: {
                     checkInDate,
-                    checkOutDate
+                    checkOutDate,
+                    roomType: roomType || undefined
                 }
             });
 
@@ -155,6 +179,23 @@ export default function CreateBooking() {
                 />
             </div>
 
+            {/* ROOM TYPE */}
+            <div>
+                <label>Room type:</label>
+                <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value)}
+                >
+                    <option value="">All types</option>
+
+                    {roomTypes.map(t => (
+                        <option key={t.code} value={t.code}>
+                            {t.name}
+                        </option>
+                    ))}
+                </select>
+            </div>
+
             {/* CHECK AVAILABILITY */}
             <button
                 onClick={checkAvailability}
@@ -182,7 +223,7 @@ export default function CreateBooking() {
                                     : "white"
                             }}
                         >
-                            Room {room.roomNumber} ({room.type})
+                            Room {room.roomNumber} ({roomTypeName(room.type)})
                         </div>
                     ))}
                 </div>
