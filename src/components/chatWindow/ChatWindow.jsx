@@ -3,7 +3,10 @@ import { styles } from "./ChatWindow.styles.js";
 import DateSelectorModal from "./DateSelectorModal.jsx"; // 1. Добави този импорт
 import RoomSelection from "./RoomSelection.jsx";
 
-export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robbers
+// Хотелът идва от VITE_HOTEL_ID (.env локално, env променлива в Render; вгражда се при build)
+const DEFAULT_HOTEL_ID = import.meta.env.VITE_HOTEL_ID || "seven_stars";
+
+export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
     const {
         isMinimized,
         setIsMinimized,
