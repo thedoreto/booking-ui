@@ -22,6 +22,7 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
         datePickerPrefill,
         roomTypes,
         roomTypeName,
+        roomImages,
         isRoomTypeMenuOpen,
         openDatePicker,
         sendMessage,
@@ -97,6 +98,7 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                                             selection={msg.roomSelection}
                                             onBook={(roomIds) => handleBookRooms(index, roomIds)}
                                             roomTypeName={roomTypeName}
+                                            roomImages={roomImages}
                                         />
                                     )}
                                     {msg.bookingList && (

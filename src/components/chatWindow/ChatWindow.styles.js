@@ -162,6 +162,15 @@ export const styles = {
     },
     roomTitle: { fontSize: "14px", fontWeight: "600" },
     roomPrice: { fontSize: "13px", color: "#4b5563", marginTop: "2px" },
+    roomImages: { display: "flex", gap: "6px", marginTop: "8px", cursor: "default" },
+    roomImage: {
+        display: "block",
+        width: "64px",
+        height: "48px",
+        objectFit: "cover",
+        borderRadius: "8px",
+        backgroundColor: "#e5e7eb"
+    },
     bookingActions: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px", marginTop: "8px" },
     bookingNote: { fontSize: "13px", color: "#6b7280", marginTop: "6px", textAlign: "right" },
     bookingCanceled: { fontSize: "13px", color: "#b91c1c", fontWeight: "600", marginTop: "6px", textAlign: "right" },
