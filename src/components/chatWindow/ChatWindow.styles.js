@@ -14,6 +14,14 @@ export const styles = {
         border: "1px solid #e5e7eb",
         transition: "all 0.25s ease"
     },
+    // Максимизиран: целият екран с малък отстъп
+    wrapperMaximized: {
+        top: "20px",
+        left: "20px",
+        maxWidth: "none",
+        width: "auto",
+        zIndex: 1000
+    },
     header: {
         height: "70px",
         padding: "0 18px",
@@ -37,7 +45,17 @@ export const styles = {
     },
     title: { fontSize: "16px", fontWeight: "600" },
     onlineText: { fontSize: "12px", color: "#10e681", marginTop: "2px" },
+    headerButtons: { display: "flex", alignItems: "center", gap: "4px" },
     minimizeButton: { border: "none", background: "transparent", color: "white", fontSize: "22px", cursor: "pointer" },
+    maximizeButton: {
+        border: "none",
+        background: "transparent",
+        color: "white",
+        cursor: "pointer",
+        padding: "6px",
+        display: "flex",
+        alignItems: "center"
+    },
     messages: {
         flex: 1,
         overflowY: "auto",
@@ -64,8 +82,17 @@ export const styles = {
         padding: "8px 14px",
         backgroundColor: "#f9fafb",
         borderTop: "1px solid #e5e7eb",
-        overflowX: "auto",
-        whiteSpace: "nowrap"
+        flexWrap: "wrap",
+        flexShrink: 0,
+        // До 3 реда бутони (30px всеки + 8px между тях + 16px padding); ако са повече – скрол надолу
+        maxHeight: "122px",
+        overflowY: "auto",
+        boxSizing: "border-box"
+    },
+    // В максимизиран прозорец – толкова реда, колкото е нужно
+    shortcutsContainerExpanded: {
+        maxHeight: "none",
+        overflowY: "visible"
     },
     shortcutChip: {
         backgroundColor: "#eff6ff",
@@ -74,6 +101,7 @@ export const styles = {
         borderRadius: "12px",
         padding: "6px 12px",
         fontSize: "13px",
+        lineHeight: "16px",
         fontWeight: "500",
         cursor: "pointer",
         flexShrink: 0,
@@ -86,6 +114,7 @@ export const styles = {
         borderRadius: "12px",
         padding: "6px 12px",
         fontSize: "13px",
+        lineHeight: "16px",
         fontWeight: "500",
         cursor: "pointer",
         flexShrink: 0,
