@@ -133,6 +133,29 @@ export const styles = {
     },
     roomTitle: { fontSize: "14px", fontWeight: "600" },
     roomPrice: { fontSize: "13px", color: "#4b5563", marginTop: "2px" },
+    bookingActions: { display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "8px", marginTop: "8px" },
+    bookingNote: { fontSize: "13px", color: "#6b7280", marginTop: "6px", textAlign: "right" },
+    bookingCanceled: { fontSize: "13px", color: "#b91c1c", fontWeight: "600", marginTop: "6px", textAlign: "right" },
+    cancelBookingButton: {
+        border: "none",
+        backgroundColor: "#dc2626",
+        color: "white",
+        padding: "6px 12px",
+        borderRadius: "10px",
+        fontSize: "13px",
+        fontWeight: "600",
+        cursor: "pointer"
+    },
+    secondaryButton: {
+        border: "none",
+        backgroundColor: "#f3f4f6",
+        color: "#111827",
+        padding: "6px 12px",
+        borderRadius: "10px",
+        fontSize: "13px",
+        fontWeight: "500",
+        cursor: "pointer"
+    },
     bookButton: {
         border: "none",
         backgroundColor: "#2563eb",

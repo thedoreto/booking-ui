@@ -130,6 +130,13 @@ export function useChat(user, hotelId) {
         }
 
         setIsRoomTypeMenuOpen(false);
+
+        // Бутон „Моите резервации“ – картички с бутон „Откажи“, без LLM
+        if (shortcut.actionType === "my_bookings") {
+            await showMyBookings(shortcut.label);
+            return;
+        }
+
         const shortcutId = shortcut.shortcutId || shortcut._id || shortcut.id;
         await sendPayloadToApi(shortcut.label, shortcutId);
     }
@@ -141,6 +148,11 @@ export function useChat(user, hotelId) {
         // Списък със свободни стаи – показваме го с избор и бутон за резервация
         if (actionType === "SELECT_ROOMS" && actionData?.rooms?.length) {
             message.roomSelection = { ...actionData, status: "open" };
+        }
+
+        // Предстоящи резервации – картички с бутон „Откажи“
+        if (actionType === "MY_BOOKINGS" && actionData?.bookings?.length) {
+            message.bookingList = { bookings: actionData.bookings, statusById: {} };
         }
 
         setMessages(prev => [...prev, message]);
@@ -190,6 +202,39 @@ export function useChat(user, hotelId) {
         }
     }
 
+    async function showMyBookings(label) {
+        setMessages(prev => [...prev, { role: "user", content: label || "Моите резервации" }]);
+        try {
+            const response = await aiApi.post("/api/bookings/mine", { hotelId, userId: user.id });
+            addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
+        } catch {
+            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+        }
+    }
+
+    // status: "open" | "canceling" | "canceled" за резервация bookingId в съобщение messageIndex
+    function setBookingStatus(messageIndex, bookingId, status) {
+        setMessages(prev => prev.map((msg, i) =>
+            i === messageIndex && msg.bookingList
+                ? { ...msg, bookingList: { ...msg.bookingList, statusById: { ...msg.bookingList.statusById, [bookingId]: status } } }
+                : msg
+        ));
+    }
+
+    // Отказва резервация от картичка в съобщение messageIndex, без LLM
+    async function handleCancelBooking(messageIndex, bookingId) {
+        setBookingStatus(messageIndex, bookingId, "canceling");
+        try {
+            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user.id, bookingId });
+            const canceled = response.data?.actionType === "BOOKING_CANCELED";
+            setBookingStatus(messageIndex, bookingId, canceled ? "canceled" : "open");
+            addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
+        } catch {
+            setBookingStatus(messageIndex, bookingId, "open");
+            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+        }
+    }
+
     // Резервира избраните стаи от списъка в съобщение messageIndex, без LLM
     async function handleBookRooms(messageIndex, roomIds) {
         const selection = messages[messageIndex]?.roomSelection;
@@ -231,6 +276,7 @@ export function useChat(user, hotelId) {
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,
-        handleBookRooms
+        handleBookRooms,
+        handleCancelBooking
     };
 }
