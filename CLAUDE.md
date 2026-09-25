@@ -28,18 +28,20 @@ npm run dev       # Vite dev server (порт 5173)
 npm run build     # продукционен build в dist/
 npm run preview   # преглед на build-а
 npm run lint      # eslint .
+npm test          # Vitest (jsdom + Testing Library), без бекенд
 ```
-Тестове: **няма** (няма скрипт `test`). Проверката е `npm run lint` + ръчно в браузър.
+Тестове: Vitest с jsdom и Testing Library (`test.environment` във `vite.config.js`), файлове `*.test.jsx` до компонента. Бекендът се mock-ва с `vi.mock` (`axios`, `../../api/aiApi.js`). Засега има само `chatWindow/RoomImages.test.jsx` – останалото се проверява с `npm run lint` + ръчно в браузър. eslint има стари грешки в `pages/` (18) и две в `chatWindow` (`DateSelectorModal.jsx`, `useChat.js`).
 
 Env (`.env`, всички `VITE_*`): `VITE_API_URL` (основен бекенд, напр. `:8080`), `VITE_AI_API_URL` (booking-ai, локално `:8081`), `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET`. След промяна – рестарт на dev сървъра.
 
 ## 5. Конвенции
 - Компоненти и страници: `PascalCase.jsx`, default export; хукове: `useXxx.js`, named/default export; 4 интервала отстъп, двойни кавички за импорти в новите файлове.
 - Нови маршрути се добавят в `App.jsx`; защитените се обгръщат с `<ProtectedRoute>`. Пътища: `/x`, `/x/:id`, `/x/new` (един и същи компонент за създаване и редакция, напр. `RoomDetails`).
-- Заявки към бекенда – през `api` (не сурово `fetch`/нов axios); към AI – през `aiApi`.
+- Заявки към бекенда – през `api` (не сурово `fetch`/нов axios); към AI – през `aiApi`. **Изключение:** `useChat.loadImagesOnce()` вика `GET /images` със собствен `axios`, защото `api.js` при 401 трие токена и пренасочва към `/login`, а снимките в чата не бива да прекъсват разговора.
 - **Custom hook патърн (образец: `useChat.js`):** цялата логика и state на сложен компонент живеят в `useXxx(props)`, който връща плосък обект със state + handler-и; компонентът остава само за рендериране.
 - Стиловете на по-сложен компонент се изнасят в `Component.styles.js` (`export const styles = {...}`); за дребно – inline. Не въвеждай нов стилов подход без нужда.
 - UI текстовете и съобщенията за грешки са на **български**; коментарите са на български или английски.
+- **Ръчни проверки:** потребителката сама чете кода и тества локално и в Render, преди да приеме промени. Не поставяй задачи и бележки от вида „тест в браузъра“, „провери в Atlas“, „провери/изтрий след deploy“, „не е тествано в браузъра“ – нито в отговорите, нито в `PLAN.md`/`SESSIONS_LOG.md`. Казвай само какво си проверил ти (компилация, unit тестове, build, lint).
 
 ## 6. Известни особености и капани
 - **`.env` е проследяван от git** (не е в `.gitignore`) и има локални промени. Не го commit-вай и не печатай стойностите; редът с активния `VITE_AI_API_URL` се сменя ръчно между localhost и Render.
