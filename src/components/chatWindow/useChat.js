@@ -20,6 +20,8 @@ export function useChat(user, hotelId) {
     // Подменюто с типове стаи под бутона „Нова резервация“
     const [isRoomTypeMenuOpen, setIsRoomTypeMenuOpen] = useState(false);
     const messagesEndRef = useRef(null);
+    // Текущата заявка за типовете стаи – за да не пращаме няколко едновременно
+    const roomTypesRequest = useRef(null);
 
     useEffect(() => {
         async function fetchShortcuts() {
@@ -37,20 +39,28 @@ export function useChat(user, hotelId) {
         fetchShortcuts();
     }, [hotelId]);
 
-    useEffect(() => {
-        async function fetchRoomTypes() {
-            try {
-                const response = await aiApi.get("/api/rooms/types", {
-                    params: { hotelId }
-                });
+    // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
+    // зареждане бекендът може още да спи (Render free план) и да върне празен списък.
+    function fetchRoomTypes() {
+        if (roomTypesRequest.current) return;
+        roomTypesRequest.current = aiApi.get("/api/rooms/types", { params: { hotelId } })
+            .then(response => {
                 if (Array.isArray(response.data)) {
                     setRoomTypes(response.data);
                 }
-            } catch (error) {
-                console.error("Грешка при зареждане на типовете стаи:", error);
-            }
-        }
+            })
+            .catch(error => console.error("Грешка при зареждане на типовете стаи:", error))
+            .finally(() => { roomTypesRequest.current = null; });
+    }
+
+    function fetchRoomTypesIfMissing() {
+        if (roomTypes.length === 0) fetchRoomTypes();
+    }
+
+    useEffect(() => {
         fetchRoomTypes();
+        // fetchRoomTypes е нова функция при всеки render – зареждаме наново само при смяна на хотела
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hotelId]);
 
     function roomTypeName(code) {
@@ -113,6 +123,7 @@ export function useChat(user, hotelId) {
             if (roomTypes.length > 0) {
                 setIsRoomTypeMenuOpen(open => !open);
             } else {
+                // Календарът се отваря веднага, а бутоните за тип се появяват в него, щом типовете се заредят
                 openDatePicker(null);
             }
             return;
@@ -136,6 +147,7 @@ export function useChat(user, hotelId) {
 
         // Проверяваме дали бекендът изисква отваряне на календара
         if (actionType === "OPEN_DATE_PICKER") {
+            fetchRoomTypesIfMissing();
             setDatePickerPrefill(actionData || null);
             setIsDatePickerOpen(true);
         }
@@ -143,6 +155,7 @@ export function useChat(user, hotelId) {
 
     // roomType – код на тип стая от подменюто, или null за всички типове
     function openDatePicker(roomType) {
+        fetchRoomTypesIfMissing();
         setIsRoomTypeMenuOpen(false);
         setDatePickerPrefill(roomType ? { roomType } : null);
         setIsDatePickerOpen(true);
