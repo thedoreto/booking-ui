@@ -162,7 +162,7 @@ export const styles = {
     },
     roomTitle: { fontSize: "14px", fontWeight: "600" },
     roomPrice: { fontSize: "13px", color: "#4b5563", marginTop: "2px" },
-    roomImages: { display: "flex", gap: "6px", marginTop: "8px", cursor: "default" },
+    roomImages: { display: "flex", justifyContent: "center", gap: "6px", marginTop: "8px", cursor: "default" },
     roomImage: {
         display: "block",
         width: "64px",
