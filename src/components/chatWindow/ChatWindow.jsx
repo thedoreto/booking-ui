@@ -15,6 +15,10 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
         isDatePickerOpen,       // 2. Вземи това от хука
         setIsDatePickerOpen,    // 2. И това
         datePickerPrefill,
+        roomTypes,
+        roomTypeName,
+        isRoomTypeMenuOpen,
+        openDatePicker,
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,    // 2. И това
@@ -59,6 +63,7 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
                                         <RoomSelection
                                             selection={msg.roomSelection}
                                             onBook={(roomIds) => handleBookRooms(index, roomIds)}
+                                            roomTypeName={roomTypeName}
                                         />
                                     )}
                                 </div>
@@ -67,13 +72,32 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
                         <div ref={messagesEndRef}></div>
                     </div>
 
+                    {isRoomTypeMenuOpen && (
+                        <div style={styles.shortcutsContainer}>
+                            <button onClick={() => openDatePicker(null)} style={styles.shortcutChip}>
+                                Всички типове
+                            </button>
+                            {roomTypes.map((type) => (
+                                <button
+                                    key={type.code}
+                                    onClick={() => openDatePicker(type.code)}
+                                    style={styles.shortcutChip}
+                                >
+                                    {type.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
                     {shortcuts.length > 0 && (
                         <div style={styles.shortcutsContainer}>
                             {shortcuts.map((sc) => (
                                 <button
                                     key={sc.shortcutId || sc._id}
                                     onClick={() => handleShortcutClick(sc)}
-                                    style={styles.shortcutChip}
+                                    style={sc.actionType === "open_date_picker" && isRoomTypeMenuOpen
+                                        ? styles.shortcutChipActive
+                                        : styles.shortcutChip}
                                 >
                                     {sc.label}
                                 </button>
@@ -107,6 +131,8 @@ export default function ChatWindow({ user, hotelId = "seven_stars" }) {//40_robb
                     onSelectDates={handleDatesSelected}
                     initialStartDate={datePickerPrefill?.startDate}
                     initialEndDate={datePickerPrefill?.endDate}
+                    initialRoomType={datePickerPrefill?.roomType}
+                    roomTypes={roomTypes}
                 />
             )}
         </div>

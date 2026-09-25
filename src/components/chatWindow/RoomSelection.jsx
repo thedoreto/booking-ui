@@ -2,14 +2,9 @@ import { useState } from "react";
 import dayjs from "dayjs";
 import { styles } from "./ChatWindow.styles.js";
 
-const ROOM_TYPES = {
-    SINGLE: "Единична стая",
-    DOUBLE: "Двойна стая",
-    APARTMENT: "Апартамент"
-};
 
 // Списък със свободни стаи в чата: потребителят избира стаи и ги резервира без LLM
-export default function RoomSelection({ selection, onBook }) {
+export default function RoomSelection({ selection, onBook, roomTypeName }) {
     const { startDate, endDate, rooms, status } = selection;
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -44,7 +39,7 @@ export default function RoomSelection({ selection, onBook }) {
                     />
                     <div style={{ flex: 1 }}>
                         <div style={styles.roomTitle}>
-                            {ROOM_TYPES[room.type] || room.type} (Стая №{room.roomNumber})
+                            {roomTypeName(room.type)} (Стая №{room.roomNumber})
                         </div>
                         <div style={styles.roomPrice}>
                             {room.pricePerNight.toFixed(2)} лв. на нощ
