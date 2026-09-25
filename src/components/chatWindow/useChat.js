@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import aiApi from "../../api/aiApi.js";
 
+// Новата резервация е едно действие в логовете на booking-ai (flowId), докато гостът не резервира.
+// След толкова време без стъпка следващото търсене започва ново действие.
+const BOOKING_FLOW_IDLE_MS = 30 * 60 * 1000;
+
 export function useChat(user, hotelId) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
@@ -22,6 +26,17 @@ export function useChat(user, hotelId) {
     const messagesEndRef = useRef(null);
     // Текущата заявка за типовете стаи – за да не пращаме няколко едновременно
     const roomTypesRequest = useRef(null);
+    // Текущата нова резервация ({ id, at }) – flowId от бекенда, връща се със следващите стъпки
+    const bookingFlow = useRef(null);
+
+    function currentBookingFlowId() {
+        const flow = bookingFlow.current;
+        return flow && Date.now() - flow.at < BOOKING_FLOW_IDLE_MS ? flow.id : null;
+    }
+
+    function rememberBookingFlow(flowId) {
+        if (flowId) bookingFlow.current = { id: flowId, at: Date.now() };
+    }
 
     useEffect(() => {
         async function fetchShortcuts() {
@@ -85,6 +100,9 @@ export function useChat(user, hotelId) {
             const history = updatedMessages.map(({ role, content }) => ({ role, content }));
             const requestBody = { hotelId, userId: user.id, messages: history };
             if (shortcutId) requestBody.shortcutId = shortcutId;
+            // Ако асистентът отвори календара, това продължава започнатата резервация
+            const flowId = currentBookingFlowId();
+            if (flowId) requestBody.flowId = flowId;
 
             const response = await aiApi.post("/api/chat", requestBody);
             const data = response.data;
@@ -151,14 +169,16 @@ export function useChat(user, hotelId) {
         }
 
         // Предстоящи резервации – картички с бутон „Откажи“
+        // flowId – отказите от този списък са стъпки в едно действие в логовете
         if (actionType === "MY_BOOKINGS" && actionData?.bookings?.length) {
-            message.bookingList = { bookings: actionData.bookings, statusById: {} };
+            message.bookingList = { bookings: actionData.bookings, statusById: {}, flowId: actionData.flowId };
         }
 
         setMessages(prev => [...prev, message]);
 
         // Проверяваме дали бекендът изисква отваряне на календара
         if (actionType === "OPEN_DATE_PICKER") {
+            rememberBookingFlow(actionData?.flowId);
             fetchRoomTypesIfMissing();
             setDatePickerPrefill(actionData || null);
             setIsDatePickerOpen(true);
@@ -194,8 +214,9 @@ export function useChat(user, hotelId) {
 
         try {
             const response = await aiApi.post("/api/rooms/available", {
-                hotelId, userId: user.id, startDate, endDate, roomType
+                hotelId, userId: user.id, startDate, endDate, roomType, flowId: currentBookingFlowId()
             });
+            rememberBookingFlow(response.data?.data?.flowId);
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
             setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
@@ -225,7 +246,8 @@ export function useChat(user, hotelId) {
     async function handleCancelBooking(messageIndex, bookingId) {
         setBookingStatus(messageIndex, bookingId, "canceling");
         try {
-            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user.id, bookingId });
+            const flowId = messages[messageIndex]?.bookingList?.flowId;
+            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user.id, bookingId, flowId });
             const canceled = response.data?.actionType === "BOOKING_CANCELED";
             setBookingStatus(messageIndex, bookingId, canceled ? "canceled" : "open");
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
@@ -247,9 +269,16 @@ export function useChat(user, hotelId) {
                 userId: user.id,
                 startDate: selection.startDate,
                 endDate: selection.endDate,
-                roomIds
+                roomIds,
+                flowId: selection.flowId || currentBookingFlowId()
             });
             const booked = response.data?.actionType === "BOOKING_CONFIRMED";
+            // След успешна резервация следващото търсене е ново действие
+            if (booked) {
+                bookingFlow.current = null;
+            } else {
+                rememberBookingFlow(selection.flowId);
+            }
             setRoomSelectionStatus(messageIndex, booked ? "booked" : "open");
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
