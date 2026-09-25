@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import dayjs from "dayjs";
 import api from "../api/api";
 import useAuth from "../auth/useAuth";
 
@@ -15,6 +16,11 @@ export default function Bookings() {
     }
 
     const isAdmin = user?.role === "ADMIN";
+
+    // Същите правила като в бекенда: отказана резервация не се отказва пак,
+    // а потребителят (не админ) може да откаже най-късно в деня преди настаняването
+    const isCanceled = (b) => b.status === "CANCELED";
+    const isPastDeadline = (b) => !isAdmin && !dayjs(b.checkInDate).isAfter(dayjs(), "day");
 
     const getErrorMessage = (data, fallback) => {
         if (!data) return fallback;
@@ -123,13 +129,19 @@ export default function Bookings() {
 
                     <div>{b.status}</div>
 
-                    {viewMode !== "history" && (
-                        <button
-                            onClick={() => cancelBooking(b.id)}
-                            style={{ color: "red" }}
-                        >
-                            Cancel
-                        </button>
+                    {viewMode !== "history" && !isCanceled(b) && (
+                        isPastDeadline(b) ? (
+                            <span style={{ color: "#6b7280", fontSize: "13px" }}>
+                                Cancellation no longer possible
+                            </span>
+                        ) : (
+                            <button
+                                onClick={() => cancelBooking(b.id)}
+                                style={{ color: "red" }}
+                            >
+                                Cancel
+                            </button>
+                        )
                     )}
 
                 </div>
