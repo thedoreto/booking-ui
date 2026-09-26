@@ -26,8 +26,6 @@ export function useChat(user, hotelId) {
     const [datePickerPrefill, setDatePickerPrefill] = useState(null);
     // Типовете стаи на хотела ([{ code, name }]) – идват от бекенда
     const [roomTypes, setRoomTypes] = useState([]);
-    // Подменюто с типове стаи под бутона „Нова резервация“
-    const [isRoomTypeMenuOpen, setIsRoomTypeMenuOpen] = useState(false);
     const messagesEndRef = useRef(null);
     // Текущата заявка за типовете стаи – за да не пращаме няколко едновременно
     const roomTypesRequest = useRef(null);
@@ -183,27 +181,8 @@ export function useChat(user, hotelId) {
         await sendPayloadToApi(input, null);
     }
 
+    // Какво прави бутонът (знание или tool), решава booking-ai; отговорът е текст или действие за показване
     async function handleShortcutClick(shortcut) {
-        // Бутон за нова резервация – отваря календара директно, без бекенд и LLM.
-        // Ако хотелът има типове стаи, първо показва подменю за избор на тип.
-        if (shortcut.actionType === "open_date_picker") {
-            if (roomTypes.length > 0) {
-                setIsRoomTypeMenuOpen(open => !open);
-            } else {
-                // Календарът се отваря веднага, а бутоните за тип се появяват в него, щом типовете се заредят
-                openDatePicker(null);
-            }
-            return;
-        }
-
-        setIsRoomTypeMenuOpen(false);
-
-        // Бутон „Моите резервации“ – картички с бутон „Откажи“, без LLM
-        if (shortcut.actionType === "my_bookings") {
-            await showMyBookings(shortcut.label);
-            return;
-        }
-
         const shortcutId = shortcut.shortcutId || shortcut._id || shortcut.id;
         await sendPayloadToApi(shortcut.label, shortcutId);
     }
@@ -235,14 +214,6 @@ export function useChat(user, hotelId) {
         }
     }
 
-    // roomType – код на тип стая от подменюто, или null за всички типове
-    function openDatePicker(roomType) {
-        fetchRoomTypesIfMissing();
-        setIsRoomTypeMenuOpen(false);
-        setDatePickerPrefill(roomType ? { roomType } : null);
-        setIsDatePickerOpen(true);
-    }
-
     function setRoomSelectionStatus(messageIndex, status) {
         setMessages(prev => prev.map((msg, i) =>
             i === messageIndex && msg.roomSelection
@@ -267,16 +238,6 @@ export function useChat(user, hotelId) {
                 hotelId, userId: user?.id, startDate, endDate, roomType, flowId: currentBookingFlowId()
             });
             rememberBookingFlow(response.data?.data?.flowId);
-            addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
-        } catch {
-            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
-        }
-    }
-
-    async function showMyBookings(label) {
-        setMessages(prev => [...prev, { role: "user", content: label || "Моите резервации" }]);
-        try {
-            const response = await aiApi.post("/api/bookings/mine", { hotelId, userId: user?.id });
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
             setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
@@ -351,8 +312,6 @@ export function useChat(user, hotelId) {
         roomTypes,
         roomTypeName,
         roomImages,
-        isRoomTypeMenuOpen,
-        openDatePicker,
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,

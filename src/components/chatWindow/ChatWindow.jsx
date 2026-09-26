@@ -23,8 +23,6 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
         roomTypes,
         roomTypeName,
         roomImages,
-        isRoomTypeMenuOpen,
-        openDatePicker,
         sendMessage,
         handleShortcutClick,
         handleDatesSelected,    // 2. И това
@@ -114,32 +112,13 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                         <div ref={messagesEndRef}></div>
                     </div>
 
-                    {isRoomTypeMenuOpen && (
-                        <div style={shortcutsStyle}>
-                            <button onClick={() => openDatePicker(null)} style={styles.shortcutChip}>
-                                Всички типове
-                            </button>
-                            {roomTypes.map((type) => (
-                                <button
-                                    key={type.code}
-                                    onClick={() => openDatePicker(type.code)}
-                                    style={styles.shortcutChip}
-                                >
-                                    {type.name}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
                     {shortcuts.length > 0 && (
                         <div style={shortcutsStyle}>
                             {shortcuts.map((sc) => (
                                 <button
                                     key={sc.shortcutId || sc._id}
                                     onClick={() => handleShortcutClick(sc)}
-                                    style={sc.actionType === "open_date_picker" && isRoomTypeMenuOpen
-                                        ? styles.shortcutChipActive
-                                        : styles.shortcutChip}
+                                    style={styles.shortcutChip}
                                 >
                                     {sc.label}
                                 </button>

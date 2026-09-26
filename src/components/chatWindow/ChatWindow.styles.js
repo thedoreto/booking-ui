@@ -107,19 +107,6 @@ export const styles = {
         flexShrink: 0,
         transition: "background-color 0.2s"
     },
-    shortcutChipActive: {
-        backgroundColor: "#1d4ed8",
-        color: "#fff",
-        border: "1px solid #1d4ed8",
-        borderRadius: "12px",
-        padding: "6px 12px",
-        fontSize: "13px",
-        lineHeight: "16px",
-        fontWeight: "500",
-        cursor: "pointer",
-        flexShrink: 0,
-        transition: "background-color 0.2s"
-    },
     inputContainer: {
         display: "flex",
         padding: "14px",
