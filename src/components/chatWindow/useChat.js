@@ -49,7 +49,7 @@ export function useChat(user, hotelId) {
             try {
                 // Кои бутони вижда гостът, решава booking-ai (guest.isActive на бутона)
                 const response = await aiApi.get("/api/shortcuts", {
-                    params: { hotelId, userId: user?.id }
+                    params: { hotelId }
                 });
                 if (response.data && Array.isArray(response.data)) {
                     setShortcuts(response.data);
@@ -59,8 +59,6 @@ export function useChat(user, hotelId) {
             }
         }
         fetchShortcuts();
-        // ChatWindow се създава наново при вход/изход (key), затова user не се сменя тук
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hotelId]);
 
     // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
@@ -145,7 +143,7 @@ export function useChat(user, hotelId) {
         try {
             // Към бекенда пращаме само role/content, без данните за UI (списъци със стаи и т.н.)
             const history = updatedMessages.map(({ role, content }) => ({ role, content }));
-            const requestBody = { hotelId, userId: user?.id, messages: history };
+            const requestBody = { hotelId, messages: history };
             if (shortcutId) requestBody.shortcutId = shortcutId;
             // Ако асистентът отвори календара, това продължава започнатата резервация
             const flowId = currentBookingFlowId();
@@ -235,7 +233,7 @@ export function useChat(user, hotelId) {
 
         try {
             const response = await aiApi.post("/api/rooms/available", {
-                hotelId, userId: user?.id, startDate, endDate, roomType, flowId: currentBookingFlowId()
+                hotelId, startDate, endDate, roomType, flowId: currentBookingFlowId()
             });
             rememberBookingFlow(response.data?.data?.flowId);
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
@@ -258,7 +256,7 @@ export function useChat(user, hotelId) {
         setBookingStatus(messageIndex, bookingId, "canceling");
         try {
             const flowId = messages[messageIndex]?.bookingList?.flowId;
-            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user?.id, bookingId, flowId });
+            const response = await aiApi.post("/api/bookings/cancel", { hotelId, bookingId, flowId });
             const canceled = response.data?.actionType === "BOOKING_CANCELED";
             setBookingStatus(messageIndex, bookingId, canceled ? "canceled" : "open");
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
@@ -277,7 +275,6 @@ export function useChat(user, hotelId) {
         try {
             const response = await aiApi.post("/api/bookings", {
                 hotelId,
-                userId: user?.id,
                 startDate: selection.startDate,
                 endDate: selection.endDate,
                 roomIds,
