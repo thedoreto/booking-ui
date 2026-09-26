@@ -2,6 +2,23 @@
 
 Пълният лог на сесиите (вкл. booking-ai и booking-system) е в `../booking-ai/SESSIONS_LOG.md`. Тук е само частта за booking-ui.
 
+## Сесия 2026-09-26 – анонимен гост, бутони, JWT, снимки от AI асистента
+
+Пълното описание (и booking-ai, booking-system) е в `../booking-ai/SESSIONS_LOG.md`.
+
+| Commit | Какво |
+|---|---|
+| `9a0c372` | Гостът вижда Hotel Info, Rooms и чата: `NavBar` (Hotel Info \| Rooms \| Login \| Register), публични `/hotelinfo`, `/rooms`, `/rooms/:id`, `*` → `/hotelinfo`, `<ChatWindow key={user?.id \|\| "guest"} />` за всички, поздрав без име |
+| `49451fb` | Бутоните в чата идват от booking-ai според това кой пита – UI не филтрира нищо |
+| `28ba492` | Махнат кодът, с който чатът знаеше какво прави всеки бутон (`open_date_picker`, `my_bookings`, подменюто с типове стаи, `showMyBookings`); всеки бутон праща само `shortcutId` към `/api/chat` |
+| `51a7044` | `aiApi.js` праща `Authorization: Bearer <token>` към booking-ai; `userId` не се праща никъде |
+| `0d3d62e` | Снимките на стаите идват в `room.images` от AI асистента; махнати `loadImagesOnce`, директното `GET /images` и `axios` от чата; гостът вижда снимките |
+| `5d41147` | `useChat` праща `sessionId` (нов при всяко отваряне на чата) с `/api/chat` – всеки гост има своя памет в booking-ai; `newSessionId()` сглобява UUID v4 от `crypto.getRandomValues`, когато няма `crypto.randomUUID` (по `http://`) |
+
+- Архитектурните правила (6) са в `CLAUDE.md`. Чатът вика само booking-ai.
+- `RoomImages.test.jsx`: 4 теста (снимките от `room.images` + `RoomSelection`); `ChatSession.test.jsx`: 2 (`sessionId` и резервният UUID).
+- Проверено: `npm test` (6/6), `npm run build`, eslint без нови грешки (остават старите 2 в `chatWindow`).
+
 ## Сесия 2026-09-25 (3) – бутоните на редове, чат на цял екран, flowId за логовете, снимки на стаите, първите тестове
 
 ### Как работи сега
