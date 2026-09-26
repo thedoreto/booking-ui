@@ -27,7 +27,7 @@ import NavBar from "./components/NavBar";
 
 function App() {
 
-    const { user, token, logout, loading } = useAuth();
+    const { user, logout, loading } = useAuth();
 
     const hotelName = "ХОТЕЛ СЕДМАТА ЗВЕЗДА";
     const hotelStars = "✦ ✦ ✦ ✦ ✦ ✦ ✦";
@@ -93,11 +93,12 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
-                <Route path="/hotelinfo" element={<ProtectedRoute><HotelInfo /></ProtectedRoute>} />
+                {/* Hotel Info и Rooms се виждат и без вход; стаята е само за четене, ако не си админ */}
+                <Route path="/hotelinfo" element={<HotelInfo />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
-                <Route path="/rooms" element={<ProtectedRoute><Rooms /></ProtectedRoute>} />
-                <Route path="/rooms/:id" element={<ProtectedRoute><RoomDetails /></ProtectedRoute>} />
+                <Route path="/rooms" element={<Rooms />} />
+                <Route path="/rooms/:id" element={<RoomDetails />} />
                 <Route path="/rooms/new" element={<ProtectedRoute><RoomDetails /></ProtectedRoute>} />
 
                 <Route path="/users" element={<ProtectedRoute><Users /></ProtectedRoute>} />
@@ -111,11 +112,12 @@ function App() {
                 <Route path="/images/upload" element={<ProtectedRoute><ImageUpload /></ProtectedRoute>} />
                 <Route path="/images/select" element={<ProtectedRoute><ImageSelector /></ProtectedRoute>} />
 
-                <Route path="*" element={<Navigate to={token ? "/hotelinfo" : "/login"} />} />
+                <Route path="*" element={<Navigate to="/hotelinfo" />} />
 
             </Routes>
 
-            {user && <ChatWindow user={user} />}
+            {/* Чатът е и за анонимния гост; key – при вход/изход започва нов разговор */}
+            <ChatWindow key={user?.id || "guest"} user={user} />
 
         </div>
     );

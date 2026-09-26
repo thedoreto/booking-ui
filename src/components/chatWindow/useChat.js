@@ -10,12 +10,15 @@ const BOOKING_FLOW_IDLE_MS = 30 * 60 * 1000;
 const MAX_ROOM_IMAGES = 3;
 
 export function useChat(user, hotelId) {
+    const isGuest = !user;
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
     const [messages, setMessages] = useState([
         {
             role: "assistant",
-            content: `Здрасти, ${user.name}. С какво мога да помогна днес?`
+            content: user
+                ? `Здрасти, ${user.name}. С какво мога да помогна днес?`
+                : "Здравейте! С какво мога да помогна днес?"
         }
     ]);
     const [input, setInput] = useState("");
@@ -51,14 +54,17 @@ export function useChat(user, hotelId) {
                     params: { hotelId }
                 });
                 if (response.data && Array.isArray(response.data)) {
-                    setShortcuts(response.data);
+                    // „Моите резервации“ е само за влязъл потребител
+                    setShortcuts(isGuest
+                        ? response.data.filter(sc => sc.actionType !== "my_bookings")
+                        : response.data);
                 }
             } catch (error) {
                 console.error("Грешка при зареждане на бутоните:", error);
             }
         }
         fetchShortcuts();
-    }, [hotelId]);
+    }, [hotelId, isGuest]);
 
     // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
     // зареждане бекендът може още да спи (Render free план) и да върне празен списък.
@@ -142,7 +148,7 @@ export function useChat(user, hotelId) {
         try {
             // Към бекенда пращаме само role/content, без данните за UI (списъци със стаи и т.н.)
             const history = updatedMessages.map(({ role, content }) => ({ role, content }));
-            const requestBody = { hotelId, userId: user.id, messages: history };
+            const requestBody = { hotelId, userId: user?.id, messages: history };
             if (shortcutId) requestBody.shortcutId = shortcutId;
             // Ако асистентът отвори календара, това продължава започнатата резервация
             const flowId = currentBookingFlowId();
@@ -259,7 +265,7 @@ export function useChat(user, hotelId) {
 
         try {
             const response = await aiApi.post("/api/rooms/available", {
-                hotelId, userId: user.id, startDate, endDate, roomType, flowId: currentBookingFlowId()
+                hotelId, userId: user?.id, startDate, endDate, roomType, flowId: currentBookingFlowId()
             });
             rememberBookingFlow(response.data?.data?.flowId);
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
@@ -271,7 +277,7 @@ export function useChat(user, hotelId) {
     async function showMyBookings(label) {
         setMessages(prev => [...prev, { role: "user", content: label || "Моите резервации" }]);
         try {
-            const response = await aiApi.post("/api/bookings/mine", { hotelId, userId: user.id });
+            const response = await aiApi.post("/api/bookings/mine", { hotelId, userId: user?.id });
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
             setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
@@ -292,7 +298,7 @@ export function useChat(user, hotelId) {
         setBookingStatus(messageIndex, bookingId, "canceling");
         try {
             const flowId = messages[messageIndex]?.bookingList?.flowId;
-            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user.id, bookingId, flowId });
+            const response = await aiApi.post("/api/bookings/cancel", { hotelId, userId: user?.id, bookingId, flowId });
             const canceled = response.data?.actionType === "BOOKING_CANCELED";
             setBookingStatus(messageIndex, bookingId, canceled ? "canceled" : "open");
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
@@ -311,7 +317,7 @@ export function useChat(user, hotelId) {
         try {
             const response = await aiApi.post("/api/bookings", {
                 hotelId,
-                userId: user.id,
+                userId: user?.id,
                 startDate: selection.startDate,
                 endDate: selection.endDate,
                 roomIds,

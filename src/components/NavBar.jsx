@@ -33,6 +33,18 @@ export default function NavBar() {
 
             {!token ? (
                 <>
+                    <Link to="/hotelinfo" style={linkStyle}>
+                        Hotel Info
+                    </Link>
+
+                    <span style={separatorStyle}>|</span>
+
+                    <Link to="/rooms" style={linkStyle}>
+                        Rooms
+                    </Link>
+
+                    <span style={separatorStyle}>|</span>
+
                     <Link to="/login" style={linkStyle}>
                         Login
                     </Link>
