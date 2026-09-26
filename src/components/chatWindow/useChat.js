@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
 import dayjs from "dayjs";
 import aiApi from "../../api/aiApi.js";
 
@@ -29,9 +28,6 @@ export function useChat(user, hotelId) {
     const messagesEndRef = useRef(null);
     // Текущата заявка за типовете стаи – за да не пращаме няколко едновременно
     const roomTypesRequest = useRef(null);
-    // Снимките на хотела по id ({ [id]: { url, title } }) – зареждат се веднъж, при първия списък със стаи
-    const [imagesById, setImagesById] = useState({});
-    const imagesRequested = useRef(false);
     // Текущата нова резервация ({ id, at }) – flowId от бекенда, връща се със следващите стъпки
     const bookingFlow = useRef(null);
 
@@ -85,41 +81,11 @@ export function useChat(user, hotelId) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hotelId]);
 
-    // Всички снимки с една заявка към booking-system (GET /images); после всяка стая си взима своите по imageIds.
-    // Нарочно без api.js: той при 401 пренасочва към вход, а снимките не бива да прекъсват чата.
-    // Без вход или при грешка стаите просто се показват без снимки.
-    // Снимка, качена след зареждането, се вижда след презареждане на страницата.
-    function loadImagesOnce() {
-        if (imagesRequested.current) return;
-        const token = localStorage.getItem("token");
-        if (!token) return;
-        imagesRequested.current = true;
-        axios.get("/images", {
-            baseURL: import.meta.env.VITE_API_URL,
-            headers: { Authorization: `Bearer ${token}` }
-        })
-            .then(response => {
-                if (!Array.isArray(response.data)) return;
-                const byId = {};
-                for (const image of response.data) {
-                    if (image?.id && typeof image.url === "string" && image.url.startsWith("https://")) {
-                        byId[image.id] = { url: image.url, title: image.title };
-                    }
-                }
-                setImagesById(byId);
-            })
-            .catch(error => {
-                // При следващия списък със стаи се опитва отново (бекендът може да е спял)
-                imagesRequested.current = false;
-                console.error("Грешка при зареждане на снимките:", error);
-            });
-    }
-
-    // До MAX_ROOM_IMAGES снимки на стаята, в реда от imageIds; липсващите се пропускат
+    // До MAX_ROOM_IMAGES снимки на стаята – идват готови в списъка със стаи от AI асистента (room.images);
+    // показват се само https адреси
     function roomImages(room) {
-        return (room?.imageIds || [])
-            .map(id => imagesById[id])
-            .filter(Boolean)
+        return (room?.images || [])
+            .filter(image => typeof image?.url === "string" && image.url.startsWith("https://"))
             .slice(0, MAX_ROOM_IMAGES);
     }
 
@@ -192,7 +158,6 @@ export function useChat(user, hotelId) {
         // Списък със свободни стаи – показваме го с избор и бутон за резервация
         if (actionType === "SELECT_ROOMS" && actionData?.rooms?.length) {
             message.roomSelection = { ...actionData, status: "open" };
-            if (actionData.rooms.some(room => room.imageIds?.length)) loadImagesOnce();
         }
 
         // Предстоящи резервации – картички с бутон „Откажи“
