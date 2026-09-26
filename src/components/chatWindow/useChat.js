@@ -10,7 +10,6 @@ const BOOKING_FLOW_IDLE_MS = 30 * 60 * 1000;
 const MAX_ROOM_IMAGES = 3;
 
 export function useChat(user, hotelId) {
-    const isGuest = !user;
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
     const [messages, setMessages] = useState([
@@ -50,21 +49,21 @@ export function useChat(user, hotelId) {
     useEffect(() => {
         async function fetchShortcuts() {
             try {
+                // Кои бутони вижда гостът, решава booking-ai (guest.isActive на бутона)
                 const response = await aiApi.get("/api/shortcuts", {
-                    params: { hotelId }
+                    params: { hotelId, userId: user?.id }
                 });
                 if (response.data && Array.isArray(response.data)) {
-                    // „Моите резервации“ е само за влязъл потребител
-                    setShortcuts(isGuest
-                        ? response.data.filter(sc => sc.actionType !== "my_bookings")
-                        : response.data);
+                    setShortcuts(response.data);
                 }
             } catch (error) {
                 console.error("Грешка при зареждане на бутоните:", error);
             }
         }
         fetchShortcuts();
-    }, [hotelId, isGuest]);
+        // ChatWindow се създава наново при вход/изход (key), затова user не се сменя тук
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hotelId]);
 
     // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
     // зареждане бекендът може още да спи (Render free план) и да върне празен списък.
