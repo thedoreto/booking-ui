@@ -8,6 +8,19 @@ const BOOKING_FLOW_IDLE_MS = 30 * 60 * 1000;
 // Колко снимки на стая се показват в списъка със свободни стаи
 const MAX_ROOM_IMAGES = 3;
 
+// UUID за разговора. crypto.randomUUID има само по https и на localhost – по http (напр. по IP от телефон
+// в локалната мрежа) го сглобяваме от crypto.getRandomValues, което работи навсякъде
+export function newSessionId() {
+    if (typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40; // версия 4
+    bytes[8] = (bytes[8] & 0x3f) | 0x80; // вариант RFC 4122
+    const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export function useChat(user, hotelId) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
@@ -30,6 +43,8 @@ export function useChat(user, hotelId) {
     const roomTypesRequest = useRef(null);
     // Текущата нова резервация ({ id, at }) – flowId от бекенда, връща се със следващите стъпки
     const bookingFlow = useRef(null);
+    // Разговорът с AI асистента – нов при всяко отваряне на чата (и при вход/изход); отделна памет за всеки гост
+    const sessionId = useRef(newSessionId());
 
     function currentBookingFlowId() {
         const flow = bookingFlow.current;
@@ -109,7 +124,7 @@ export function useChat(user, hotelId) {
         try {
             // Към бекенда пращаме само role/content, без данните за UI (списъци със стаи и т.н.)
             const history = updatedMessages.map(({ role, content }) => ({ role, content }));
-            const requestBody = { hotelId, messages: history };
+            const requestBody = { hotelId, sessionId: sessionId.current, messages: history };
             if (shortcutId) requestBody.shortcutId = shortcutId;
             // Ако асистентът отвори календара, това продължава започнатата резервация
             const flowId = currentBookingFlowId();
