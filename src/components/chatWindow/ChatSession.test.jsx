@@ -4,7 +4,7 @@ import aiApi from "../../api/aiApi.js";
 import { newSessionId, useChat } from "./useChat.js";
 
 // Всеки отворен чат е отделен разговор за AI асистента (sessionId) – двама гости не делят памет
-vi.mock("../../api/aiApi.js", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock("../../api/aiApi.js", () => ({ default: { get: vi.fn(), post: vi.fn() }, CHAT_LANGUAGE_KEY: "chatLanguage" }));
 
 async function openChat() {
     const hook = renderHook(() => useChat(null, "seven_stars"));
@@ -50,5 +50,42 @@ describe("разговорът с AI асистента", () => {
         } finally {
             crypto.randomUUID = randomUUID;
         }
+    });
+});
+
+describe("езикът на чата", () => {
+    const SETTINGS = {
+        languages: [{ code: "bg", name: "Български" }, { code: "en", name: "English" }],
+        language: "bg"
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        localStorage.clear();
+        aiApi.get.mockImplementation((url) =>
+            Promise.resolve({ data: url === "/api/chat/settings" ? SETTINGS : [] }));
+    });
+
+    afterEach(cleanup);
+
+    it("езиците и избраният идват от AI асистента", async () => {
+        const hook = renderHook(() => useChat(null, "seven_stars"));
+
+        await waitFor(() => expect(hook.result.current.languages).toEqual(SETTINGS.languages));
+        expect(hook.result.current.language).toBe("bg");
+        expect(aiApi.get).toHaveBeenCalledWith("/api/chat/settings", { params: { hotelId: "seven_stars" } });
+    });
+
+    it("изборът се помни в браузъра и бутоните се зареждат наново", async () => {
+        const hook = renderHook(() => useChat(null, "seven_stars"));
+        await waitFor(() => expect(hook.result.current.languages).toHaveLength(2));
+        const shortcutRequests = () => aiApi.get.mock.calls.filter(([url]) => url === "/api/shortcuts").length;
+        expect(shortcutRequests()).toBe(1);
+
+        act(() => hook.result.current.changeLanguage("en"));
+
+        expect(hook.result.current.language).toBe("en");
+        expect(localStorage.getItem("chatLanguage")).toBe("en");
+        await waitFor(() => expect(shortcutRequests()).toBe(2));
     });
 });

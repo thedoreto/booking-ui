@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
-import aiApi from "../../api/aiApi.js";
+import aiApi, { CHAT_LANGUAGE_KEY } from "../../api/aiApi.js";
 
 // Новата резервация е едно действие в логовете на booking-ai (flowId), докато гостът не резервира.
 // След толкова време без стъпка следващото търсене започва ново действие.
@@ -24,6 +24,9 @@ export function newSessionId() {
 export function useChat(user, hotelId) {
     const [isMinimized, setIsMinimized] = useState(false);
     const [shortcuts, setShortcuts] = useState([]);
+    // Езиците на чата ([{ code, name }]) и избраният – идват от AI асистента
+    const [languages, setLanguages] = useState([]);
+    const [language, setLanguage] = useState(null);
     const [messages, setMessages] = useState([
         {
             role: "assistant",
@@ -55,22 +58,45 @@ export function useChat(user, hotelId) {
         if (flowId) bookingFlow.current = { id: flowId, at: Date.now() };
     }
 
-    useEffect(() => {
-        async function fetchShortcuts() {
-            try {
-                // Кои бутони вижда гостът, решава booking-ai (guest.isActive на бутона)
-                const response = await aiApi.get("/api/shortcuts", {
-                    params: { hotelId }
-                });
-                if (response.data && Array.isArray(response.data)) {
+    function fetchShortcuts() {
+        // Кои бутони вижда гостът, решава booking-ai (guest.isActive на бутона)
+        aiApi.get("/api/shortcuts", { params: { hotelId } })
+            .then(response => {
+                if (Array.isArray(response.data)) {
                     setShortcuts(response.data);
                 }
-            } catch (error) {
-                console.error("Грешка при зареждане на бутоните:", error);
-            }
-        }
+            })
+            .catch(error => console.error("Грешка при зареждане на бутоните:", error));
+    }
+
+    function fetchSettings() {
+        aiApi.get("/api/chat/settings", { params: { hotelId } })
+            .then(response => {
+                if (Array.isArray(response.data?.languages)) {
+                    setLanguages(response.data.languages);
+                    setLanguage(response.data.language);
+                }
+            })
+            .catch(error => console.error("Грешка при зареждане на настройките на чата:", error));
+    }
+
+    useEffect(() => {
+        fetchSettings();
         fetchShortcuts();
+        // Функциите са нови при всеки render – зареждаме наново само при смяна на хотела
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hotelId]);
+
+    // Избор от менюто с езици: помни се в браузъра и бутоните се зареждат на новия език
+    function changeLanguage(code) {
+        try {
+            localStorage.setItem(CHAT_LANGUAGE_KEY, code);
+        } catch (error) {
+            console.error("Езикът не може да се запомни:", error);
+        }
+        setLanguage(code);
+        fetchShortcuts();
+    }
 
     // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
     // зареждане бекендът може още да спи (Render free план) и да върне празен списък.
@@ -279,6 +305,9 @@ export function useChat(user, hotelId) {
         isMinimized,
         setIsMinimized,
         shortcuts,
+        languages,
+        language,
+        changeLanguage,
         messages,
         input,
         setInput,

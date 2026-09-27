@@ -5,7 +5,7 @@ import { useChat } from "./useChat.js";
 import RoomSelection from "./RoomSelection.jsx";
 
 // Снимките в чата идват готови в списъка със стаи от AI асистента (room.images) – чатът не вика booking-system
-vi.mock("../../api/aiApi.js", () => ({ default: { get: vi.fn(), post: vi.fn() } }));
+vi.mock("../../api/aiApi.js", () => ({ default: { get: vi.fn(), post: vi.fn() }, CHAT_LANGUAGE_KEY: "chatLanguage" }));
 
 const USER = { id: "user-1", name: "Гост" };
 

@@ -46,6 +46,18 @@ export const styles = {
     title: { fontSize: "16px", fontWeight: "600" },
     onlineText: { fontSize: "12px", color: "#10e681", marginTop: "2px" },
     headerButtons: { display: "flex", alignItems: "center", gap: "4px" },
+    languageSelect: {
+        backgroundColor: "transparent",
+        color: "white",
+        border: "1px solid rgba(255, 255, 255, 0.5)",
+        borderRadius: "6px",
+        padding: "4px 6px",
+        fontSize: "13px",
+        cursor: "pointer",
+        marginRight: "4px"
+    },
+    // Падащият списък се рисува от браузъра – с бял текст върху бял фон не се вижда
+    languageOption: { color: "#111827" },
     minimizeButton: { border: "none", background: "transparent", color: "white", fontSize: "22px", cursor: "pointer" },
     maximizeButton: {
         border: "none",

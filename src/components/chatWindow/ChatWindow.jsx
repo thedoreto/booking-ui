@@ -13,6 +13,9 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
         isMinimized,
         setIsMinimized,
         shortcuts,
+        languages,
+        language,
+        changeLanguage,
         messages,
         input,
         setInput,
@@ -56,6 +59,21 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                     </div>
                 </div>
                 <div style={styles.headerButtons}>
+                    {/* Езиците идват от AI асистента; с един език няма какво да се избира */}
+                    {!isMinimized && languages.length > 1 && (
+                        <select
+                            value={language ?? ""}
+                            onChange={(e) => changeLanguage(e.target.value)}
+                            style={styles.languageSelect}
+                            aria-label="Language"
+                        >
+                            {languages.map((lang) => (
+                                <option key={lang.code} value={lang.code} style={styles.languageOption}>
+                                    {lang.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
                     {!isMinimized && (
                         <button
                             onClick={() => setIsMaximized(!isMaximized)}
