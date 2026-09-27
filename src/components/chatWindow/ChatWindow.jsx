@@ -16,6 +16,9 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
         languages,
         language,
         changeLanguage,
+        t,
+        greeting,
+        calendarLocale,
         messages,
         input,
         setInput,
@@ -54,8 +57,8 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                 <div style={styles.headerLeft}>
                     <div style={styles.onlineDot}></div>
                     <div>
-                        <div style={styles.title}>AI Assistant</div>
-                        <div style={styles.onlineText}>Online</div>
+                        <div style={styles.title}>{t("ui.title")}</div>
+                        <div style={styles.onlineText}>{t("ui.online")}</div>
                     </div>
                 </div>
                 <div style={styles.headerButtons}>
@@ -78,8 +81,8 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                         <button
                             onClick={() => setIsMaximized(!isMaximized)}
                             style={styles.maximizeButton}
-                            title={isMaximized ? "Намали" : "Цял екран"}
-                            aria-label={isMaximized ? "Намали" : "Цял екран"}
+                            title={t(isMaximized ? "ui.restore" : "ui.maximize")}
+                            aria-label={t(isMaximized ? "ui.restore" : "ui.maximize")}
                         >
                             {isMaximized ? <RestoreIcon /> : <MaximizeIcon />}
                         </button>
@@ -108,13 +111,14 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                                         color: msg.role === "user" ? "white" : "#111827"
                                     }}
                                 >
-                                    {msg.content}
+                                    {msg.greeting ? greeting : msg.content}
                                     {msg.roomSelection && (
                                         <RoomSelection
                                             selection={msg.roomSelection}
                                             onBook={(roomIds) => handleBookRooms(index, roomIds)}
                                             roomTypeName={roomTypeName}
                                             roomImages={roomImages}
+                                            t={t}
                                         />
                                     )}
                                     {msg.bookingList && (
@@ -122,6 +126,7 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                                             bookingList={msg.bookingList}
                                             onCancel={(bookingId) => handleCancelBooking(index, bookingId)}
                                             roomTypeName={roomTypeName}
+                                            t={t}
                                         />
                                     )}
                                 </div>
@@ -149,14 +154,14 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Напиши съобщение..."
+                            placeholder={t("ui.inputPlaceholder")}
                             style={styles.input}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") sendMessage();
                             }}
                         />
                         <button onClick={sendMessage} style={styles.button}>
-                            Send
+                            {t("ui.send")}
                         </button>
                     </div>
                 </>
@@ -172,6 +177,8 @@ export default function ChatWindow({ user, hotelId = DEFAULT_HOTEL_ID }) {
                     initialEndDate={datePickerPrefill?.endDate}
                     initialRoomType={datePickerPrefill?.roomType}
                     roomTypes={roomTypes}
+                    t={t}
+                    locale={calendarLocale}
                 />
             )}
         </div>

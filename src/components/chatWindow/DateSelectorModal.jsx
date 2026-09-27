@@ -3,11 +3,11 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import 'dayjs/locale/bg';
 
 // initialStartDate/initialEndDate ('YYYY-MM-DD') и initialRoomType (код на тип), по избор – казани в чата.
-// roomTypes ([{ code, name }]) – типовете стаи на хотела от бекенда
-export default function DateSelectorModal({ isOpen, onClose, onSelectDates, initialStartDate, initialEndDate, initialRoomType, roomTypes = [] }) {
+// roomTypes ([{ code, name }]) – типовете стаи на хотела от бекенда; t – текстовете на прозореца;
+// locale – езикът на календара (локалът на dayjs вече е зареден)
+export default function DateSelectorModal({ isOpen, onClose, onSelectDates, initialStartDate, initialEndDate, initialRoomType, roomTypes = [], t, locale = 'en' }) {
     const [startDate, setStartDate] = useState(() =>
         initialStartDate ? dayjs(initialStartDate) : dayjs()
     );
@@ -16,7 +16,7 @@ export default function DateSelectorModal({ isOpen, onClose, onSelectDates, init
     );
     const [roomType, setRoomType] = useState(() => initialRoomType || null);
     // Бутоните за тип стая; null = всички типове
-    const roomTypeOptions = [{ code: null, name: 'Всички' }, ...roomTypes];
+    const roomTypeOptions = [{ code: null, name: t('ui.allRoomTypes') }, ...roomTypes];
 
     if (!isOpen) return null;
 
@@ -31,22 +31,22 @@ export default function DateSelectorModal({ isOpen, onClose, onSelectDates, init
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="bg">
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={locale}>
             <div style={modalOverlayStyle}>
                 <div style={modalContentStyle}>
                     <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#111827', fontSize: '18px' }}>
-                        Изберете период за настаняване
+                        {t('ui.datePickerTitle')}
                     </h3>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
                         <DatePicker
-                            label="Начална дата"
+                            label={t('ui.startDate')}
                             value={startDate}
                             onChange={(newValue) => setStartDate(newValue)}
                             slotProps={{ textField: { fullWidth: true, size: 'small' } }}
                         />
                         <DatePicker
-                            label="Крайна дата"
+                            label={t('ui.endDate')}
                             value={endDate}
                             minDate={startDate}
                             onChange={(newValue) => setEndDate(newValue)}
@@ -54,7 +54,7 @@ export default function DateSelectorModal({ isOpen, onClose, onSelectDates, init
                         />
                         {roomTypes.length > 0 && (
                             <div>
-                                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '6px' }}>Тип стая</div>
+                                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '6px' }}>{t('ui.roomType')}</div>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                     {roomTypeOptions.map(({ code, name }) => (
                                         <button
@@ -72,8 +72,8 @@ export default function DateSelectorModal({ isOpen, onClose, onSelectDates, init
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button type="button" onClick={onClose} style={cancelBtnStyle}>Отказ</button>
-                        <button type="button" onClick={handleConfirm} style={primaryBtnStyle}>Провери стаи</button>
+                        <button type="button" onClick={onClose} style={cancelBtnStyle}>{t('ui.cancel')}</button>
+                        <button type="button" onClick={handleConfirm} style={primaryBtnStyle}>{t('ui.checkRooms')}</button>
                     </div>
                 </div>
             </div>

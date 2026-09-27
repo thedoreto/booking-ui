@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import aiApi, { CHAT_LANGUAGE_KEY } from "../../api/aiApi.js";
+import { formatText, loadCalendarLocale } from "./chatTexts.js";
 
 // Новата резервация е едно действие в логовете на booking-ai (flowId), докато гостът не резервира.
 // След толкова време без стъпка следващото търсене започва ново действие.
@@ -27,14 +28,12 @@ export function useChat(user, hotelId) {
     // Езиците на чата ([{ code, name }]) и избраният – идват от AI асистента
     const [languages, setLanguages] = useState([]);
     const [language, setLanguage] = useState(null);
-    const [messages, setMessages] = useState([
-        {
-            role: "assistant",
-            content: user
-                ? `Здрасти, ${user.name}. С какво мога да помогна днес?`
-                : "Здравейте! С какво мога да помогна днес?"
-        }
-    ]);
+    // Текстовете на прозореца на избрания език ({ "ui.send": "Изпрати", ... }) – от AI асистента
+    const [texts, setTexts] = useState({});
+    // Езикът на календара – след като локалът му е зареден; без него календарът е на английски
+    const [calendarLocale, setCalendarLocale] = useState("en");
+    // Поздравът се рисува с текущите текстове (greeting), за да сменя езика заедно с прозореца
+    const [messages, setMessages] = useState([{ role: "assistant", greeting: true }]);
     const [input, setInput] = useState("");
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
     // Дати и тип стая, казани в чата ({ startDate?, endDate?, roomType? }), с които календарът се отваря попълнен
@@ -75,10 +74,22 @@ export function useChat(user, hotelId) {
                 if (Array.isArray(response.data?.languages)) {
                     setLanguages(response.data.languages);
                     setLanguage(response.data.language);
+                    setTexts(response.data.texts || {});
+                    const code = response.data.language;
+                    loadCalendarLocale(code)
+                        .then(loaded => setCalendarLocale(loaded && code ? code : "en"))
+                        .catch(() => setCalendarLocale("en"));
                 }
             })
             .catch(error => console.error("Грешка при зареждане на настройките на чата:", error));
     }
+
+    // Текстът на прозореца на избрания език; {име} – от params
+    function t(key, params) {
+        return formatText(texts, key, params);
+    }
+
+    const greeting = user ? t("ui.greetingUser", { name: user.name }) : t("ui.greeting");
 
     useEffect(() => {
         fetchSettings();
@@ -87,7 +98,7 @@ export function useChat(user, hotelId) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [hotelId]);
 
-    // Избор от менюто с езици: помни се в браузъра и бутоните се зареждат на новия език
+    // Избор от менюто с езици: помни се в браузъра, а текстовете, бутоните и типовете стаи се зареждат на новия език
     function changeLanguage(code) {
         try {
             localStorage.setItem(CHAT_LANGUAGE_KEY, code);
@@ -95,7 +106,9 @@ export function useChat(user, hotelId) {
             console.error("Езикът не може да се запомни:", error);
         }
         setLanguage(code);
+        fetchSettings();
         fetchShortcuts();
+        fetchRoomTypes();
     }
 
     // Зарежда типовете стаи. Вика се и повторно, докато списъкът е празен: при първото
@@ -168,7 +181,7 @@ export function useChat(user, hotelId) {
                 if (responseText.type === "ok") {
                     assistantContent = JSON.stringify(responseText.data, null, 2);
                 } else if (responseText.type === "error") {
-                    assistantContent = responseText.data || "Грешка";
+                    assistantContent = responseText.data || t("ui.error");
                 } else {
                     assistantContent = JSON.stringify(responseText);
                 }
@@ -178,7 +191,7 @@ export function useChat(user, hotelId) {
 
             addAssistantMessage(assistantContent, actionType, data?.data);
         } catch (error) {
-            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+            setMessages(prev => [...prev, { role: "assistant", content: t("ui.connectionError") }]);
         }
     }
 
@@ -231,10 +244,13 @@ export function useChat(user, hotelId) {
     // roomType (SINGLE/DOUBLE/APARTMENT) е по избор – null търси всички типове
     async function handleDatesSelected(startDate, endDate, roomType = null) {
         setIsDatePickerOpen(false);
-        const typeLabel = roomType ? ` (${roomTypeName(roomType)})` : "";
         setMessages(prev => [...prev, {
             role: "user",
-            content: `Свободни стаи от ${dayjs(startDate).format("DD.MM.YYYY")} до ${dayjs(endDate).format("DD.MM.YYYY")}${typeLabel}`
+            content: t(roomType ? "ui.availableRoomsRequestOfType" : "ui.availableRoomsRequest", {
+                start: dayjs(startDate).format("DD.MM.YYYY"),
+                end: dayjs(endDate).format("DD.MM.YYYY"),
+                type: roomType ? roomTypeName(roomType) : ""
+            })
         }]);
 
         try {
@@ -244,7 +260,7 @@ export function useChat(user, hotelId) {
             rememberBookingFlow(response.data?.data?.flowId);
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
-            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+            setMessages(prev => [...prev, { role: "assistant", content: t("ui.connectionError") }]);
         }
     }
 
@@ -268,7 +284,7 @@ export function useChat(user, hotelId) {
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
             setBookingStatus(messageIndex, bookingId, "open");
-            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+            setMessages(prev => [...prev, { role: "assistant", content: t("ui.connectionError") }]);
         }
     }
 
@@ -297,7 +313,7 @@ export function useChat(user, hotelId) {
             addAssistantMessage(response.data?.reply, response.data?.actionType, response.data?.data);
         } catch {
             setRoomSelectionStatus(messageIndex, "open");
-            setMessages(prev => [...prev, { role: "assistant", content: "Проблем с връзката към сървъра." }]);
+            setMessages(prev => [...prev, { role: "assistant", content: t("ui.connectionError") }]);
         }
     }
 
@@ -308,6 +324,9 @@ export function useChat(user, hotelId) {
         languages,
         language,
         changeLanguage,
+        t,
+        greeting,
+        calendarLocale,
         messages,
         input,
         setInput,

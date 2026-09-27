@@ -1,9 +1,10 @@
 import { useState } from "react";
 import dayjs from "dayjs";
 import { styles } from "./ChatWindow.styles.js";
+import { nightsText } from "./chatTexts.js";
 
-// Списък със свободни стаи в чата: потребителят избира стаи и ги резервира без LLM
-export default function RoomSelection({ selection, onBook, roomTypeName, roomImages }) {
+// Списък със свободни стаи в чата: потребителят избира стаи и ги резервира без LLM; t – текстовете на прозореца
+export default function RoomSelection({ selection, onBook, roomTypeName, roomImages, t }) {
     const { startDate, endDate, rooms, status } = selection;
     const [selectedIds, setSelectedIds] = useState([]);
 
@@ -38,10 +39,10 @@ export default function RoomSelection({ selection, onBook, roomTypeName, roomIma
                     />
                     <div style={{ flex: 1 }}>
                         <div style={styles.roomTitle}>
-                            {roomTypeName(room.type)} (Стая №{room.roomNumber})
+                            {roomTypeName(room.type)} ({t("ui.roomNumber", { number: room.roomNumber })})
                         </div>
                         <div style={styles.roomPrice}>
-                            {room.pricePerNight.toFixed(2)} лв. на нощ
+                            {t("ui.pricePerNight", { price: room.pricePerNight.toFixed(2) })}
                         </div>
                         <RoomImages images={roomImages(room)} />
                     </div>
@@ -59,10 +60,10 @@ export default function RoomSelection({ selection, onBook, roomTypeName, roomIma
                     }}
                 >
                     {status === "booking"
-                        ? "Резервиране..."
+                        ? t("ui.booking")
                         : selectedIds.length === 0
-                            ? "Изберете стая"
-                            : `Резервирай (${nights} ${nights === 1 ? "нощ" : "нощи"}, ${total.toFixed(2)} лв.)`}
+                            ? t("ui.selectRoom")
+                            : t("ui.bookButton", { nights: nightsText(t, nights), total: total.toFixed(2) })}
                 </button>
             )}
         </div>

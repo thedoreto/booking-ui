@@ -56,7 +56,8 @@ describe("разговорът с AI асистента", () => {
 describe("езикът на чата", () => {
     const SETTINGS = {
         languages: [{ code: "bg", name: "Български" }, { code: "en", name: "English" }],
-        language: "bg"
+        language: "bg",
+        texts: { "ui.greeting": "Hello!", "ui.roomNumber": "Room #{number}" }
     };
 
     beforeEach(() => {
@@ -87,5 +88,14 @@ describe("езикът на чата", () => {
         expect(hook.result.current.language).toBe("en");
         expect(localStorage.getItem("chatLanguage")).toBe("en");
         await waitFor(() => expect(shortcutRequests()).toBe(2));
+    });
+
+    it("текстовете на прозореца идват от AI асистента, а без тях – резервните", async () => {
+        const hook = renderHook(() => useChat(null, "seven_stars"));
+        expect(hook.result.current.greeting).toBe("Здравейте! С какво мога да помогна днес?");
+
+        await waitFor(() => expect(hook.result.current.greeting).toBe("Hello!"));
+        expect(hook.result.current.t("ui.roomNumber", { number: 12 })).toBe("Room #12");
+        expect(hook.result.current.t("ui.unknown")).toBe("ui.unknown");
     });
 });

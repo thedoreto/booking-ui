@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen, waitFor } from "@t
 import aiApi from "../../api/aiApi.js";
 import { useChat } from "./useChat.js";
 import RoomSelection from "./RoomSelection.jsx";
+import { formatText } from "./chatTexts.js";
 
 // Снимките в чата идват готови в списъка със стаи от AI асистента (room.images) – чатът не вика booking-system
 vi.mock("../../api/aiApi.js", () => ({ default: { get: vi.fn(), post: vi.fn() }, CHAT_LANGUAGE_KEY: "chatLanguage" }));
@@ -76,6 +77,7 @@ describe("снимките на стаите в RoomSelection", () => {
                 onBook={() => {}}
                 roomTypeName={code => code}
                 roomImages={room => images[room.id] || []}
+                t={(key, params) => formatText({ "ui.roomNumber": "Стая №{number}" }, key, params)}
             />
         );
     }
