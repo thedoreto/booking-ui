@@ -10,7 +10,7 @@
 3. **AI асистентът праща заявки към бекенда (booking-system) само през Kafka.**
 4. **AI асистентът получава данните от бекенда само през Kafka.** Собствената база на booking-ai (`HotelAI`: `knowledge_`, `shortcuts_`, `logs_`) не е бекендът.
 5. **Правило 2 важи само за чата.** Страниците на сайта (Hotel Info, Rooms, Bookings и т.н.) са сайтът на хотела и си говорят директно с booking-system през `api.js` – това е правилно и не се мести в AI асистента.
-6. **Действията в чата имат отделни адреси в booking-ai и така остават:** `/api/chat` (съобщение или бутон по `shortcutId`), `/api/rooms/available` (избрани дати), `/api/bookings` (избрани стаи), `/api/bookings/cancel` (отказ), `/api/shortcuts`, `/api/rooms/types`. Не ги сливай в `/api/chat` – отделните адреси минават без LLM (правило 1).
+6. **Действията в чата имат отделни адреси в booking-ai и така остават:** `/api/chat` (съобщение или бутон по `shortcutId`), `/api/rooms/available` (избрани дати), `/api/bookings` (избрани стаи), `/api/bookings/cancel` (отказ), `/api/shortcuts`, `/api/rooms/types`, `/api/chat/settings` (езиците на чата). Не ги сливай в `/api/chat` – отделните адреси минават без LLM (правило 1).
 7. **Няма legacy.** Проектите още не работят с реални хотели (само тестовите 40_robbers и seven_stars) – не пазим стари данни и стар код: без преходни режими, флагове за съвместимост, миграции и поредност на deploy заради стари версии. Сменя се директно, старото се маха. Спира да важи с първия реален хотел.
 
 ## 2. Технологичен стек
@@ -68,11 +68,12 @@ Env (`.env`, всички `VITE_*`): `VITE_API_URL` (основен бекенд
 Repo: `../booking-ai` (`github.com/thedoreto/booking-ai`) – Java 17 / Spring Boot 3.4 / LangChain4j (Gemini) + MongoDB RAG + Kafka. Има собствен `CLAUDE.md`.
 - **Entry point (бекенд):** `com.hotel.BookingAiApplication`; HTTP контролер: `langchain/controller/AiLangChainController.java` (`@RequestMapping("/api")`).
 - **Контракт, който UI ползва** (`src/components/chatWindow/useChat.js` през `api/aiApi.js`):
-  - Всички заявки носят header `Authorization: Bearer <token>`, ако има вход (`aiApi.js`).
+  - Всички заявки носят header `Authorization: Bearer <token>`, ако има вход, и `Accept-Language: <код>`, ако е избран език (`localStorage.chatLanguage`) (`aiApi.js`).
+  - `GET /api/chat/settings?hotelId=…` → `{ languages: [{ code, name }], language, texts }` – менюто с езици в хедъра на чата (само при повече от един език) и текстовете на прозореца на избрания език (`texts` – ключове `ui.*` от колекция `translations` в booking-ai). UI не знае кои езици има и няма свои текстове: всичко минава през `t(key, params)` от `useChat` (`chatTexts.js`, `{име}` се заменя; резервни – само няколко на български, ако booking-ai не отговаря). Нов текст в прозореца = нов запис `ui.*` в Mongo. Календарът зарежда локала на dayjs за езика при нужда (`loadCalendarLocale`). При смяна на езика изборът се помни, а текстовете, бутоните и типовете стаи се зареждат наново.
   - `POST /api/chat` – body `{ hotelId, sessionId, messages[], shortcutId?, flowId? }` → `{ reply, actionType, data }`
   - `POST /api/rooms/available` – body `{ hotelId, startDate, endDate, roomType?, flowId? }` → `{ reply, actionType: "SELECT_ROOMS"|null, data: { startDate, endDate, rooms[{…, images[{id,url,title}]}], flowId } }`
   - `POST /api/bookings` – body `{ hotelId, startDate, endDate, roomIds[], flowId? }` → `{ reply, actionType: "BOOKING_CONFIRMED"|null, data }`
   - `POST /api/bookings/cancel` – body `{ hotelId, bookingId, flowId? }` → `{ reply, actionType: "BOOKING_CANCELED"|null, data }`
-  - `GET /api/shortcuts?hotelId=…` – бутоните в чата. UI не знае какво прави бутонът: при клик праща `POST /api/chat` с `shortcutId`, а booking-ai връща текст (знание) или действие (`OPEN_DATE_PICKER`, `MY_BOOKINGS`…) според `action` на бутона. Няма подменю с типове стаи под „Нова резервация“ – типът се избира в календара.
+  - `GET /api/shortcuts?hotelId=…` → `[{ shortcutId, label, category }]` – бутоните в чата, `label` вече е на избрания език. UI не знае какво прави бутонът: при клик праща `POST /api/chat` с `shortcutId`, а booking-ai връща текст (знание) или действие (`OPEN_DATE_PICKER`, `MY_BOOKINGS`…) според `action` на бутона. Няма подменю с типове стаи под „Нова резервация“ – типът се избира в календара.
 - Локално: `./mvnw spring-boot:run` в `../booking-ai` (порт **8081**), после `VITE_AI_API_URL=http://localhost:8081`. Прод: Render (`booking-ai-3s50.onrender.com`, cold start).
 - CORS е отворен за `/api/**`. Промяна на request/response формата се прави и на двете места (`AiLangChainController` ↔ `useChat.js`).
