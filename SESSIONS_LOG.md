@@ -2,6 +2,16 @@
 
 Пълният лог на сесиите (вкл. booking-ai и booking-system) е в `../booking-ai/SESSIONS_LOG.md`. Тук е само частта за booking-ui.
 
+## Сесия 2026-09-28 – календарът на езика на чата
+
+Пълното описание – в `../booking-ai/SESSIONS_LOG.md`.
+
+| Commit | Какво |
+|---|---|
+| `b6d082f` | `loadCalendarLocale` (`chatTexts.js`): локалите на dayjs са UMD и при `npm run dev` търсят глобален `dayjs` – преди зареждането `globalThis.dayjs = dayjs`; `true` само ако локалът е в `dayjs.Ls`. Преди това календарът при `npm run dev` винаги беше на английски |
+
+- Проверено: ESLint без забележки за `chatTexts.js`, `npm run build`.
+
 ## Сесия 2026-09-26 – анонимен гост, бутони, JWT, снимки от AI асистента
 
 Пълното описание (и booking-ai, booking-system) е в `../booking-ai/SESSIONS_LOG.md`.
