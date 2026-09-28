@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 // Текстовете на прозореца на чата идват от AI асистента (/api/chat/settings → texts, ключове ui.*) на избрания език.
 // Тук са само резервните – ако AI асистентът не отговаря, прозорецът пак се чете вместо да показва ключове.
 const FALLBACK_TEXTS = {
@@ -32,6 +34,10 @@ export async function loadCalendarLocale(code) {
     if (!code || code === "en") return true;
     const load = DAYJS_LOCALES[`/node_modules/dayjs/locale/${code}.js`];
     if (!load) return false;
+    // Файловете с локали са UMD: заредени в браузъра, те се регистрират в глобалния dayjs –
+    // даваме им същия dayjs, който ползва календарът
+    globalThis.dayjs = dayjs;
     await load();
-    return true;
+    // true само ако локалът наистина е регистриран
+    return Boolean(dayjs.Ls[code]);
 }
