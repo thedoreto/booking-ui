@@ -9,6 +9,7 @@
 | Commit | Какво |
 |---|---|
 | `b6d082f` | `loadCalendarLocale` (`chatTexts.js`): локалите на dayjs са UMD и при `npm run dev` търсят глобален `dayjs` – преди зареждането `globalThis.dayjs = dayjs`; `true` само ако локалът е в `dayjs.Ls`. Преди това календарът при `npm run dev` винаги беше на английски |
+| `3094301` | Бележките (`CLAUDE.md`, този лог) |
 
 - Проверено: ESLint без забележки за `chatTexts.js`, `npm run build`.
 
